@@ -13,11 +13,12 @@
   h1{font-size:20px;margin:0 0 8px}
   h2{font-size:16px;margin:0 0 10px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-  input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .toolbar{display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:10px}
-  .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;text-decoration:none;color:inherit}
   .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.link{background:#fff}
   .btn:disabled{opacity:.6;cursor:not-allowed}
   .hide{display:none}
   .alert{padding:10px 12px;border-radius:10px;font-weight:600}
@@ -25,13 +26,18 @@
   .alert.err{background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
   .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
   .muted{color:var(--muted);font-size:12px}
+  .nav{display:flex;gap:8px;align-items:center}
 </style>
 </head>
 <body>
 <div class="layout" id="app">
   <div class="topbar">
     <h1>Fogorvosi bevételkövető – Rögzítés</h1>
-    <div id="userBox" class="muted"></div>
+    <div class="nav">
+      <a class="btn link" href="settings.html">Beállítások</a>
+      <a class="btn link" href="income.html">Bevételek</a>
+      <span id="userBox" class="muted"></span>
+    </div>
   </div>
 
   <!-- Auth -->
@@ -81,9 +87,15 @@
         <input type="text" id="procedure" placeholder="Pl. tömés, gyökérkezelés…">
       </div>
 
-      <div>
-        <label>Fizetett összeg (HUF)</label>
-        <input type="number" id="amount" min="0" step="1" placeholder="pl. 25000">
+      <div class="row">
+        <div>
+          <label>Fizetett összeg (HUF)</label>
+          <input type="number" id="amount" min="0" step="1" placeholder="pl. 25000">
+        </div>
+        <div>
+          <label>Munkahely</label>
+          <select id="workplace"></select>
+        </div>
       </div>
 
       <div class="toolbar">
@@ -91,7 +103,7 @@
         <button class="btn primary" id="saveBtn">Mentés</button>
       </div>
 
-      <div class="muted">A bejegyzés elmentésre kerül a felhőbe. A részletes adatok (munkahely, százalékok, listák, havi bontás) külön oldalon lesznek.</div>
+      <div class="muted">A részletes számolás a külön oldalakon lesz. Itt most csak a rögzítés történik.</div>
     </div>
   </div>
 </div>
@@ -101,7 +113,7 @@
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
   import { getFirestore, collection, addDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-  // >>> Töltsd ki a SAJÁT configoddal (már megvan nálad)
+  // Töltsd ki a SAJÁT configoddal (ez a tiéd alapján példa)
   const firebaseConfig = {
     apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
     authDomain: "dental-38375.firebaseapp.com",
@@ -131,6 +143,7 @@
   const patientEl = document.getElementById('patient');
   const procedureEl = document.getElementById('procedure');
   const amountEl = document.getElementById('amount');
+  const workplaceEl = document.getElementById('workplace');
   const resetBtn = document.getElementById('resetBtn');
   const saveBtn = document.getElementById('saveBtn');
 
@@ -138,14 +151,15 @@
   const saveErr = document.getElementById('saveErr');
 
   let currentUID = null;
+  let settings = { w1name:'Hely1', w2name:'Hely2' };
 
-  // Auth UI váltás
   function uiAuth(isLogged, user){
     if(isLogged){
       authCard.classList.add('hide');
       appContent.classList.remove('hide');
       userBox.textContent = user.email;
       dateEl.value = new Date().toISOString().slice(0,10);
+      loadSettingsAndBindWorkplaces();
       patientEl.focus();
     }else{
       authCard.classList.remove('hide');
@@ -156,15 +170,13 @@
 
   loginBtn.onclick = async ()=>{
     authMsg.textContent = '';
-    try{
-      await signInWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value);
-    }catch(e){ authMsg.textContent = e.message || 'Belépési hiba'; }
+    try{ await signInWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value); }
+    catch(e){ authMsg.textContent = e.message || 'Belépési hiba'; }
   };
   registerBtn.onclick = async ()=>{
     authMsg.textContent = '';
-    try{
-      await createUserWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value);
-    }catch(e){ authMsg.textContent = e.message || 'Regisztrációs hiba'; }
+    try{ await createUserWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value); }
+    catch(e){ authMsg.textContent = e.message || 'Regisztrációs hiba'; }
   };
   logoutBtn.onclick = ()=>signOut(auth);
 
@@ -172,23 +184,36 @@
     if(!user){ uiAuth(false); return; }
     currentUID = user.uid;
     uiAuth(true, user);
-    // alap settings doc létrehozása, ha később kell
+    // ha nincs settings, hozzuk létre alapból (következő oldalakon majd szerkeszthető)
     const sRef = doc(db,'users',currentUID,'meta','settings');
     const snap = await getDoc(sRef);
     if(!snap.exists()){
-      await setDoc(sRef,{ w1name:'Hely1', w1pct:0.30, w2name:'Hely2', w2pct:0.40 });
+      await setDoc(sRef,{ w1name:'Hely1', w2name:'Hely2', w1pct:0.30, w2pct:0.40 });
     }
   });
 
-  // Űrlap törlése
+  async function loadSettingsAndBindWorkplaces(){
+    const sRef = doc(db,'users',currentUID,'meta','settings');
+    const snap = await getDoc(sRef);
+    if(snap.exists()){
+      const s = snap.data();
+      settings.w1name = s.w1name || 'Hely1';
+      settings.w2name = s.w2name || 'Hely2';
+    }
+    workplaceEl.innerHTML = '';
+    [settings.w1name, settings.w2name].forEach(n=>{
+      const opt = document.createElement('option'); opt.value=n; opt.textContent=n; workplaceEl.appendChild(opt);
+    });
+  }
+
   function clearForm(){
     patientEl.value=''; procedureEl.value=''; amountEl.value='';
     dateEl.value = new Date().toISOString().slice(0,10);
+    workplaceEl.selectedIndex = 0;
     patientEl.focus();
   }
   resetBtn.onclick = clearForm;
 
-  // Mentés
   saveBtn.onclick = async ()=>{
     saveOk.classList.add('hide');
     saveErr.classList.add('hide');
@@ -199,15 +224,14 @@
       patient: (patientEl.value||'').trim(),
       procedure: (procedureEl.value||'').trim(),
       amount: Math.max(0, Math.round(+amountEl.value||0)),
-      // a többi mezőt később, a másik oldalon kezeljük:
-      workplace: null,
-      pctAtSave: null,
+      workplace: workplaceEl.value || null,
+      pctAtSave: null,   // majd a másik oldalon kerül számításra/mentésre
       ownAtSave: null,
       createdAt: Date.now()
     };
 
-    if(!payload.date || !payload.patient || !payload.procedure || !payload.amount){
-      saveErr.textContent = 'Kérlek tölts ki minden mezőt (dátum, név, beavatkozás, összeg).';
+    if(!payload.date || !payload.patient || !payload.procedure || !payload.amount || !payload.workplace){
+      saveErr.textContent = 'Dátum, páciens, beavatkozás, összeg és munkahely kötelező.';
       saveErr.classList.remove('hide');
       return;
     }
@@ -216,7 +240,6 @@
     try{
       await addDoc(collection(db,'users',currentUID,'entries'), payload);
       saveOk.classList.remove('hide');
-      // 2 másodperc múlva elhalványítjuk
       setTimeout(()=>saveOk.classList.add('hide'), 2000);
       clearForm();
     }catch(err){
