@@ -113,7 +113,7 @@
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
   import { getFirestore, collection, addDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-  // Töltsd ki a SAJÁT configoddal (ez a tiéd alapján példa)
+  // >>> saját config
   const firebaseConfig = {
     apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
     authDomain: "dental-38375.firebaseapp.com",
@@ -151,7 +151,50 @@
   const saveErr = document.getElementById('saveErr');
 
   let currentUID = null;
-  let settings = { w1name:'Hely1', w2name:'Hely2' };
+  // settings + színek
+  let settings = {
+    w1name:'Hely1', w1pct:0.30, w1color:'#2563eb',
+    w2name:'Hely2', w2pct:0.40, w2color:'#16a34a'
+  };
+
+  // kontraszt számítás a jó olvashatósághoz
+  const hexToRgb = (hex)=>{ const h=hex.replace('#',''); const b=parseInt(h.length===3?h.split('').map(x=>x+x).join(''):h,16); return {r:(b>>16)&255,g:(b>>8)&255,b:b&255}; };
+  const contrast = (hex)=>{ const {r,g,b}=hexToRgb(hex||'#999'); const yiq=(r*299+g*587+b*114)/1000; return yiq>=128?'#000':'#fff'; };
+
+  // lokális kulcs a legutóbbi munkahelynek (felhasználónként)
+  const lastKey = ()=> currentUID ? `dent_last_place_${currentUID}` : 'dent_last_place';
+
+  function setSelectBG(placeName){
+    // állítsuk a select háttérszínét a hely színére
+    const color = (placeName===settings.w1name) ? settings.w1color :
+                  (placeName===settings.w2name) ? settings.w2color : '#ffffff';
+    workplaceEl.style.background = color;
+    workplaceEl.style.color = contrast(color);
+    workplaceEl.style.borderColor = color;
+  }
+
+  function bindWorkplaceOptions(){
+    workplaceEl.innerHTML = '';
+    [settings.w1name, settings.w2name].forEach(n=>{
+      const opt=document.createElement('option'); opt.value=n; opt.textContent=n; workplaceEl.appendChild(opt);
+    });
+
+    // default: utoljára használt munkahely (ha van)
+    const last = localStorage.getItem(lastKey());
+    if(last){
+      const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===last);
+      workplaceEl.selectedIndex = idx>=0 ? idx : 0;
+    }else{
+      workplaceEl.selectedIndex = 0;
+    }
+    setSelectBG(workplaceEl.value);
+  }
+
+  workplaceEl?.addEventListener('change', ()=>{
+    setSelectBG(workplaceEl.value);
+    // frissítsük a „legutóbbi” értéket is
+    if(currentUID) localStorage.setItem(lastKey(), workplaceEl.value);
+  });
 
   function uiAuth(isLogged, user){
     if(isLogged){
@@ -184,11 +227,11 @@
     if(!user){ uiAuth(false); return; }
     currentUID = user.uid;
     uiAuth(true, user);
-    // ha nincs settings, hozzuk létre alapból (következő oldalakon majd szerkeszthető)
+    // ha nincs settings, hozzuk létre (alap színekkel is)
     const sRef = doc(db,'users',currentUID,'meta','settings');
     const snap = await getDoc(sRef);
     if(!snap.exists()){
-      await setDoc(sRef,{ w1name:'Hely1', w2name:'Hely2', w1pct:0.30, w2pct:0.40 });
+      await setDoc(sRef, settings);
     }
   });
 
@@ -197,19 +240,30 @@
     const snap = await getDoc(sRef);
     if(snap.exists()){
       const s = snap.data();
-      settings.w1name = s.w1name || 'Hely1';
-      settings.w2name = s.w2name || 'Hely2';
+      settings.w1name  = s.w1name  ?? settings.w1name;
+      settings.w2name  = s.w2name  ?? settings.w2name;
+      settings.w1pct   = s.w1pct   ?? settings.w1pct;
+      settings.w2pct   = s.w2pct   ?? settings.w2pct;
+      settings.w1color = s.w1color ?? settings.w1color;
+      settings.w2color = s.w2color ?? settings.w2color;
     }
-    workplaceEl.innerHTML = '';
-    [settings.w1name, settings.w2name].forEach(n=>{
-      const opt = document.createElement('option'); opt.value=n; opt.textContent=n; workplaceEl.appendChild(opt);
-    });
+    bindWorkplaceOptions();
   }
 
   function clearForm(){
     patientEl.value=''; procedureEl.value=''; amountEl.value='';
     dateEl.value = new Date().toISOString().slice(0,10);
-    workplaceEl.selectedIndex = 0;
+
+    // töltse be a legutóbbit, és állítsa színt
+    const last = localStorage.getItem(lastKey());
+    if(last){
+      const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===last);
+      workplaceEl.selectedIndex = idx>=0 ? idx : 0;
+    }else{
+      workplaceEl.selectedIndex = 0;
+    }
+    setSelectBG(workplaceEl.value);
+
     patientEl.focus();
   }
   resetBtn.onclick = clearForm;
@@ -225,7 +279,7 @@
       procedure: (procedureEl.value||'').trim(),
       amount: Math.max(0, Math.round(+amountEl.value||0)),
       workplace: workplaceEl.value || null,
-      pctAtSave: null,   // majd a másik oldalon kerül számításra/mentésre
+      pctAtSave: null,   // income oldalon számoljuk/normalizáljuk
       ownAtSave: null,
       createdAt: Date.now()
     };
@@ -239,6 +293,10 @@
     saveBtn.disabled = true;
     try{
       await addDoc(collection(db,'users',currentUID,'entries'), payload);
+
+      // mentsük le „utoljára használt munkahely”-nek
+      localStorage.setItem(lastKey(), payload.workplace);
+
       saveOk.classList.remove('hide');
       setTimeout(()=>saveOk.classList.add('hide'), 2000);
       clearForm();
