@@ -266,6 +266,10 @@
     filters.classList.remove('hide');
     listCard.classList.remove('hide');
 
+    // >>> Alapértelmezett: aktuális hónap (YYYY-MM) + első render
+    filterMonth.value = new Date().toISOString().slice(0, 7);
+    render();
+
     // settings betöltés
     const sRef = doc(db,'users',uid,'meta','settings');
     const snap = await getDoc(sRef);
