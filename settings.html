@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beállítások – Fogorvosi bevételkövető</title>
+<style>
+  :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--shadow:0 6px 25px rgba(15,23,42,.08)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+  .layout{max-width:800px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
+  h1{margin:0 0 6px;font-size:20px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  input, .row input, .row select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;text-decoration:none;color:inherit}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .muted{color:var(--muted);font-size:12px}
+  .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid var(--line);font-weight:600}
+  .hide{display:none}
+  .ok{padding:10px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+  .err{padding:10px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="topbar">
+    <h1>Beállítások</h1>
+    <div>
+      <a class="btn" href="index.html">Rögzítés</a>
+      <a class="btn" href="income.html">Bevételek</a>
+      <button class="btn" id="logoutBtn">Kijelentkezés</button>
+    </div>
+  </div>
+
+  <div class="card" id="authCard">
+    <div class="row">
+      <div>
+        <label>E-mail</label>
+        <input type="email" id="email">
+      </div>
+      <div>
+        <label>Jelszó</label>
+        <input type="password" id="password">
+      </div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button class="btn primary" id="loginBtn">Belépés</button>
+      <button class="btn" id="registerBtn">Regisztráció</button>
+    </div>
+    <div class="muted" id="authMsg"></div>
+  </div>
+
+  <div class="card hide" id="content">
+    <h2>Helyek</h2>
+    <div id="msgOk" class="ok hide">Mentve ✓</div>
+    <div id="msgErr" class="err hide"></div>
+
+    <div class="row3">
+      <div>
+        <label>Hely 1 neve</label>
+        <input id="w1name" placeholder="Pl. Rendelő A">
+      </div>
+      <div>
+        <label>Hely 1 – Saját % (0–1)</label>
+        <input id="w1pct" type="number" min="0" max="1" step="0.01" placeholder="0.30">
+      </div>
+      <div>
+        <label>Hely 1 – Szín</label>
+        <input id="w1color" type="color" value="#2563eb">
+      </div>
+    </div>
+
+    <div class="row3" style="margin-top:10px">
+      <div>
+        <label>Hely 2 neve</label>
+        <input id="w2name" placeholder="Pl. Rendelő B">
+      </div>
+      <div>
+        <label>Hely 2 – Saját % (0–1)</label>
+        <input id="w2pct" type="number" min="0" max="1" step="0.01" placeholder="0.40">
+      </div>
+      <div>
+        <label>Hely 2 – Szín</label>
+        <input id="w2color" type="color" value="#16a34a">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:center;margin:14px 0">
+      <span class="muted">Előnézet:</span>
+      <span id="p1" class="pill">Hely1</span>
+      <span id="p2" class="pill">Hely2</span>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn primary" id="saveBtn">Beállítások mentése</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+  const firebaseConfig = {
+  apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
+  authDomain: "dental-38375.firebaseapp.com",
+  projectId: "dental-38375",
+  storageBucket: "dental-38375.firebasestorage.app",
+  messagingSenderId: "245424156358",
+  appId: "1:245424156358:web:e6426588b20675756331c7",
+  measurementId: "G-WC90WMHRZT"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const authCard = document.getElementById('authCard');
+  const content = document.getElementById('content');
+  const emailEl = document.getElementById('email');
+  const passEl = document.getElementById('password');
+  const loginBtn = document.getElementById('loginBtn');
+  const registerBtn = document.getElementById('registerBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const authMsg = document.getElementById('authMsg');
+
+  const w1name = document.getElementById('w1name');
+  const w1pct  = document.getElementById('w1pct');
+  const w1color= document.getElementById('w1color');
+  const w2name = document.getElementById('w2name');
+  const w2pct  = document.getElementById('w2pct');
+  const w2color= document.getElementById('w2color');
+  const p1 = document.getElementById('p1');
+  const p2 = document.getElementById('p2');
+  const saveBtn = document.getElementById('saveBtn');
+  const msgOk = document.getElementById('msgOk');
+  const msgErr = document.getElementById('msgErr');
+
+  let uid = null;
+
+  const applyPreview = ()=>{
+    p1.textContent = w1name.value || 'Hely1';
+    p1.style.background = w1color.value;
+    p1.style.color = '#fff';
+    p2.textContent = w2name.value || 'Hely2';
+    p2.style.background = w2color.value;
+    p2.style.color = '#fff';
+  };
+
+  [w1name,w2name,w1color,w2color].forEach(el=>el.addEventListener('input', applyPreview));
+
+  onAuthStateChanged(auth, async user=>{
+    if(!user){ authCard.classList.remove('hide'); content.classList.add('hide'); uid=null; return; }
+    uid = user.uid;
+    authCard.classList.add('hide'); content.classList.remove('hide');
+    const sRef = doc(db,'users',uid,'meta','settings');
+    const snap = await getDoc(sRef);
+    if(!snap.exists()){
+      await setDoc(sRef,{ w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a' });
+    }
+    const s = (await getDoc(sRef)).data();
+    w1name.value = s.w1name ?? 'Hely1';
+    w1pct.value  = s.w1pct ?? 0.30;
+    w1color.value= s.w1color ?? '#2563eb';
+    w2name.value = s.w2name ?? 'Hely2';
+    w2pct.value  = s.w2pct ?? 0.40;
+    w2color.value= s.w2color ?? '#16a34a';
+    applyPreview();
+  });
+
+  loginBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await signInWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); }catch(e){ authMsg.textContent = e.message; } };
+  registerBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await createUserWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); }catch(e){ authMsg.textContent = e.message; } };
+  logoutBtn.onclick = ()=>signOut(auth);
+
+  saveBtn.onclick = async ()=>{
+    msgOk.classList.add('hide'); msgErr.classList.add('hide');
+    try{
+      const data = {
+        w1name: (w1name.value||'Hely1').trim(),
+        w1pct: Math.max(0,Math.min(1,+w1pct.value||0.30)),
+        w1color: w1color.value || '#2563eb',
+        w2name: (w2name.value||'Hely2').trim(),
+        w2pct: Math.max(0,Math.min(1,+w2pct.value||0.40)),
+        w2color: w2color.value || '#16a34a',
+      };
+      await setDoc(doc(db,'users',uid,'meta','settings'), data, {merge:true});
+      msgOk.classList.remove('hide');
+      setTimeout(()=>msgOk.classList.add('hide'),1500);
+    }catch(err){
+      msgErr.textContent = err?.message || 'Mentési hiba';
+      msgErr.classList.remove('hide');
+    }
+  };
+</script>
+</body>
+</html>
