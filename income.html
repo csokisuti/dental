@@ -70,7 +70,10 @@
       </div>
       <div>
         <label>Munkahely</label>
-        <select id="filterWorkplace"><option value="">Mind</option></select>
+        <!-- NEW: „Összesen” mint alapértelmezett -->
+        <select id="filterWorkplace">
+          <option value="">Összesen</option>
+        </select>
       </div>
       <div>
         <label>Páciens</label>
@@ -154,14 +157,14 @@
   import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, query, orderBy, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
-  apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
-  authDomain: "dental-38375.firebaseapp.com",
-  projectId: "dental-38375",
-  storageBucket: "dental-38375.firebasestorage.app",
-  messagingSenderId: "245424156358",
-  appId: "1:245424156358:web:e6426588b20675756331c7",
-  measurementId: "G-WC90WMHRZT"
-};
+    apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
+    authDomain: "dental-38375.firebaseapp.com",
+    projectId: "dental-38375",
+    storageBucket: "dental-38375.appspot.com",
+    messagingSenderId: "245424156358",
+    appId: "1:245424156358:web:e6426588b20675756331c7",
+    measurementId: "G-WC90WMHRZT"
+  };
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -202,52 +205,89 @@
   let settings = { w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a' };
   let editingId = null;
 
+  // --- helpers ---
   const hexToRgb = (hex)=>{
     const h = hex.replace('#','');
     const b = parseInt(h.length===3? h.split('').map(x=>x+x).join(''):h,16);
     return {r:(b>>16)&255,g:(b>>8)&255,b:b&255};
   };
-  const contrast = (hex)=>{ // returns '#000' or '#fff'
-    const {r,g,b} = hexToRgb(hex||'#999999');
-    const yiq = (r*299 + g*587 + b*114)/1000;
-    return yiq >= 128 ? '#000' : '#fff';
-  };
+  const contrast = (hex)=>{ const {r,g,b} = hexToRgb(hex||'#999'); const yiq=(r*299+g*587+b*114)/1000; return yiq>=128?'#000':'#fff'; };
+  const fmt = n => (n||0).toLocaleString('hu-HU',{maximumFractionDigits:0});
+  const monthKey = d => { const dt=new Date(d); return isNaN(dt)?'':dt.toISOString().slice(0,7); };
+  function pctFor(place){ if(place===settings.w1name) return +settings.w1pct||0; if(place===settings.w2name) return +settings.w2pct||0; return 0; }
 
-  const applyPill = (el, name, color)=>{
-    el.textContent = name;
-    el.style.background = color;
-    el.style.color = contrast(color);
-    el.style.borderColor = color;
-  };
-
-  function bindWorkplaceSelect(select){
+  function bindWorkplaceSelect(select, withAll=false){
     select.innerHTML = '';
+    if(withAll){
+      const all = document.createElement('option'); all.value=''; all.textContent='Összesen'; select.appendChild(all);
+    }
     [settings.w1name, settings.w2name].forEach(n=>{
-      const o = document.createElement('option'); o.value=n; o.textContent=n; select.appendChild(o);
+      const o=document.createElement('option'); o.value=n; o.textContent=n; select.appendChild(o);
     });
+    if(withAll) select.selectedIndex = 0; // alapértelmezett: Összesen
+  }
+
+  // snapshot frissítésekor ne számoljuk újra végtelenségig
+  const updatedOnce = new Set(); // id-k, amelyeket már normalizáltunk
+
+  async function normalizeMissingCalculations(list){
+    const ops = [];
+    for(const e of list){
+      const shouldHavePct = pctFor(e.workplace);
+      const computedOwn = Math.round((+e.amount||0) * shouldHavePct);
+
+      const missingPct = (e.pctAtSave == null);
+      const missingOwn = (e.ownAtSave == null);
+      const wrongOwn = (!missingOwn && e.ownAtSave !== computedOwn);
+
+      if((missingPct || missingOwn || wrongOwn) && !updatedOnce.has(e.id)){
+        updatedOnce.add(e.id);
+        ops.push(
+          updateDoc(doc(db,'users',uid,'entries',e.id), {
+            pctAtSave: shouldHavePct,
+            ownAtSave: computedOwn
+          }).catch(()=>{}) // ha nincs jogosultság/hiba, ne álljon meg a többi
+        );
+      }
+    }
+    if(ops.length) await Promise.all(ops);
   }
 
   onAuthStateChanged(auth, async user=>{
-    if(!user){ authCard.classList.remove('hide'); filters.classList.add('hide'); listCard.classList.add('hide'); editor.classList.add('hide'); uid=null; return; }
+    if(!user){
+      authCard.classList.remove('hide');
+      filters.classList.add('hide');
+      listCard.classList.add('hide');
+      editor.classList.add('hide');
+      uid=null; return;
+    }
     uid = user.uid;
-    authCard.classList.add('hide'); filters.classList.remove('hide'); listCard.classList.remove('hide');
+    authCard.classList.add('hide');
+    filters.classList.remove('hide');
+    listCard.classList.remove('hide');
 
     // settings betöltés
     const sRef = doc(db,'users',uid,'meta','settings');
     const snap = await getDoc(sRef);
     if(!snap.exists()){
-      await setDoc(sRef, settings);
+      await setDoc(sRef, settings); // default
     } else {
       settings = { ...settings, ...snap.data() };
     }
-    bindWorkplaceSelect(filterWorkplace);
-    bindWorkplaceSelect(editWorkplace);
+
+    // legördülők
+    bindWorkplaceSelect(filterWorkplace, /*withAll*/ true);
+    bindWorkplaceSelect(editWorkplace, /*withAll*/ false);
 
     // entries realtime
     const qRef = query(collection(db,'users',uid,'entries'), orderBy('date','desc'));
-    onSnapshot(qRef, s=>{
+    onSnapshot(qRef, async s=>{
       const arr = []; s.forEach(d=>arr.push({id:d.id, ...d.data()}));
       entries = arr;
+
+      // NEW: automatikus számítás/kitöltés hiányzó vagy rossz értékekre
+      await normalizeMissingCalculations(entries);
+
       render();
     });
   });
@@ -261,16 +301,13 @@
     el.addEventListener('change', render);
   });
 
-  function monthKey(d){ const dt=new Date(d); return isNaN(dt)?'':dt.toISOString().slice(0,7); }
-  function fmt(n){ return (n||0).toLocaleString('hu-HU',{maximumFractionDigits:0}); }
-
   function filtered(){
     const m = filterMonth.value;
     const w = filterWorkplace.value;
     const p = (filterPatient.value||'').toLowerCase().trim();
     return entries.filter(e=>{
       const okM = m ? monthKey(e.date)===m : true;
-      const okW = w ? e.workplace===w : true;
+      const okW = w ? e.workplace===w : true; // üres = Összesen
       const okP = p ? (e.patient||'').toLowerCase().includes(p) : true;
       return okM && okW && okP;
     });
@@ -280,21 +317,27 @@
     const list = filtered();
     tableBody.innerHTML = '';
     let sumG = 0, sumO = 0;
+
     for(const e of list){
+      const color = e.workplace===settings.w1name ? settings.w1color : settings.w2color;
+      const pill = `<span class="pill" style="background:${color};color:${contrast(color)};border-color:${color}">${e.workplace||''}</span>`;
+
+      // Ha még nem frissült Firestore-ban, számoljuk ki megjelenítéshez helyben is:
+      const localPct = (e.pctAtSave != null) ? e.pctAtSave : pctFor(e.workplace);
+      const localOwn = (e.ownAtSave != null) ? e.ownAtSave : Math.round((+e.amount||0) * localPct);
+
       sumG += +e.amount||0;
-      sumO += +e.ownAtSave||0;
+      sumO += +localOwn||0;
+
       const tr = document.createElement('tr');
-
-      const pill = `<span class="pill" style="background:${e.workplace===settings.w1name?settings.w1color:settings.w2color};color:${e.workplace===settings.w1name?contrast(settings.w1color):contrast(settings.w2color)};border-color:${e.workplace===settings.w1name?settings.w1color:settings.w2color}">${e.workplace||''}</span>`;
-
       tr.innerHTML = `
         <td>${e.date||''}</td>
         <td>${e.patient||''}</td>
         <td>${e.procedure||''}</td>
         <td>${pill}</td>
         <td class="right">${fmt(e.amount)}</td>
-        <td class="right">${e.pctAtSave!=null? Math.round(e.pctAtSave*100) + '%' : '-'}</td>
-        <td class="right">${e.ownAtSave!=null? fmt(e.ownAtSave) : '-'}</td>
+        <td class="right">${localPct!=null? Math.round(localPct*100) + '%' : '-'}</td>
+        <td class="right">${fmt(localOwn)}</td>
         <td class="right">
           <button class="btn" data-edit="${e.id}">Szerk.</button>
           <button class="btn danger" data-del="${e.id}">Törlés</button>
@@ -334,12 +377,6 @@
     editErr.classList.add('hide');
     editMsg.classList.add('hide');
   };
-
-  function pctFor(place){
-    if(place===settings.w1name) return +settings.w1pct||0;
-    if(place===settings.w2name) return +settings.w2pct||0;
-    return 0;
-  }
 
   saveEdit.onclick = async ()=>{
     if(!editingId) return;
