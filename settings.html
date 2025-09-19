@@ -11,6 +11,7 @@
   .layout{max-width:800px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
   h1{margin:0 0 6px;font-size:20px}
+  h2{margin:0 0 10px;font-size:16px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
   input, .row input, .row select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -23,6 +24,15 @@
   .hide{display:none}
   .ok{padding:10px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
   .err{padding:10px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
+
+  /* Gyors beavatkozások szerkesztése */
+  .chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;font-weight:600
+  }
+  .chip .mini{font-size:12px;opacity:.8;cursor:pointer}
+  .chip .mini:hover{opacity:1;text-decoration:underline}
 </style>
 </head>
 <body>
@@ -95,7 +105,24 @@
       <span id="p2" class="pill">Hely2</span>
     </div>
 
-    <div style="display:flex;gap:8px;justify-content:flex-end">
+    <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+
+    <h2>Gyors beavatkozások</h2>
+    <div class="row">
+      <div>
+        <label>Megnevezés</label>
+        <input id="procInput" placeholder="Pl. Tömések, Gyökérkezelés, Fogkőeltávolítás">
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <button class="btn" id="procAddBtn">Hozzáadás</button>
+        <button class="btn" id="procSaveEditBtn" style="display:none">Szerkesztés mentése</button>
+        <button class="btn" id="procCancelEditBtn" style="display:none">Mégse</button>
+      </div>
+    </div>
+    <div class="muted" style="margin-top:6px">Tipp: vesszővel elválasztva több elemet is hozzáadhatsz egyszerre.</div>
+    <div id="procList" class="chip-list"></div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
       <button class="btn primary" id="saveBtn">Beállítások mentése</button>
     </div>
   </div>
@@ -107,14 +134,14 @@
   import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
-  apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
-  authDomain: "dental-38375.firebaseapp.com",
-  projectId: "dental-38375",
-  storageBucket: "dental-38375.firebasestorage.app",
-  messagingSenderId: "245424156358",
-  appId: "1:245424156358:web:e6426588b20675756331c7",
-  measurementId: "G-WC90WMHRZT"
-};
+    apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
+    authDomain: "dental-38375.firebaseapp.com",
+    projectId: "dental-38375",
+    storageBucket: "dental-38375.firebasestorage.app",
+    messagingSenderId: "245424156358",
+    appId: "1:245424156358:web:e6426588b20675756331c7",
+    measurementId: "G-WC90WMHRZT"
+  };
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -141,7 +168,16 @@
   const msgOk = document.getElementById('msgOk');
   const msgErr = document.getElementById('msgErr');
 
+  // Gyors beavatkozások UI
+  const procInput = document.getElementById('procInput');
+  const procAddBtn = document.getElementById('procAddBtn');
+  const procSaveEditBtn = document.getElementById('procSaveEditBtn');
+  const procCancelEditBtn = document.getElementById('procCancelEditBtn');
+  const procList = document.getElementById('procList');
+
   let uid = null;
+  let procedures = []; // string[]
+  let editingIndex = -1; // szerkesztés alatt álló elem indexe
 
   const applyPreview = ()=>{
     p1.textContent = w1name.value || 'Hely1';
@@ -154,6 +190,78 @@
 
   [w1name,w2name,w1color,w2color].forEach(el=>el.addEventListener('input', applyPreview));
 
+  function renderProcedures(){
+    procList.innerHTML = '';
+    if(procedures.length===0){
+      const span = document.createElement('span');
+      span.className='muted';
+      span.textContent='Nincs még gyors beavatkozás. Adj hozzá fent!';
+      procList.appendChild(span);
+      return;
+    }
+    procedures.forEach((name, idx)=>{
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      const text = document.createElement('span');
+      text.textContent = name;
+      const edit = document.createElement('span');
+      edit.className='mini'; edit.textContent='✎';
+      edit.title='Szerkesztés';
+      edit.onclick = ()=>{
+        editingIndex = idx;
+        procInput.value = name;
+        procAddBtn.style.display='none';
+        procSaveEditBtn.style.display='';
+        procCancelEditBtn.style.display='';
+        procInput.focus();
+      };
+      const del = document.createElement('span');
+      del.className='mini'; del.textContent='×';
+      del.title='Törlés';
+      del.onclick = ()=>{
+        procedures.splice(idx,1);
+        renderProcedures();
+      };
+      chip.appendChild(text);
+      chip.appendChild(edit);
+      chip.appendChild(del);
+      procList.appendChild(chip);
+    });
+  }
+
+  function addFromInput(){
+    const raw = (procInput.value||'').trim();
+    if(!raw) return;
+    // több elem vesszővel elválasztva
+    raw.split(',').map(s=>s.trim()).filter(Boolean).forEach(item=>{
+      if(!procedures.includes(item)) procedures.push(item);
+    });
+    procInput.value='';
+    renderProcedures();
+  }
+
+  procAddBtn.onclick = addFromInput;
+
+  procSaveEditBtn.onclick = ()=>{
+    const val = (procInput.value||'').trim();
+    if(val && editingIndex>=0){
+      procedures[editingIndex] = val;
+      editingIndex = -1;
+      procInput.value='';
+      procAddBtn.style.display='';
+      procSaveEditBtn.style.display='none';
+      procCancelEditBtn.style.display='none';
+      renderProcedures();
+    }
+  };
+  procCancelEditBtn.onclick = ()=>{
+    editingIndex = -1;
+    procInput.value='';
+    procAddBtn.style.display='';
+    procSaveEditBtn.style.display='none';
+    procCancelEditBtn.style.display='none';
+  };
+
   onAuthStateChanged(auth, async user=>{
     if(!user){ authCard.classList.remove('hide'); content.classList.add('hide'); uid=null; return; }
     uid = user.uid;
@@ -161,7 +269,7 @@
     const sRef = doc(db,'users',uid,'meta','settings');
     const snap = await getDoc(sRef);
     if(!snap.exists()){
-      await setDoc(sRef,{ w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a' });
+      await setDoc(sRef,{ w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a', procedures: [] });
     }
     const s = (await getDoc(sRef)).data();
     w1name.value = s.w1name ?? 'Hely1';
@@ -170,7 +278,9 @@
     w2name.value = s.w2name ?? 'Hely2';
     w2pct.value  = s.w2pct ?? 0.40;
     w2color.value= s.w2color ?? '#16a34a';
+    procedures = Array.isArray(s.procedures) ? s.procedures.slice(0,100) : [];
     applyPreview();
+    renderProcedures();
   });
 
   loginBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await signInWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); }catch(e){ authMsg.textContent = e.message; } };
@@ -187,6 +297,7 @@
         w2name: (w2name.value||'Hely2').trim(),
         w2pct: Math.max(0,Math.min(1,+w2pct.value||0.40)),
         w2color: w2color.value || '#16a34a',
+        procedures: procedures.slice(0,100)
       };
       await setDoc(doc(db,'users',uid,'meta','settings'), data, {merge:true});
       msgOk.classList.remove('hide');
