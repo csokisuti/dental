@@ -33,9 +33,33 @@
   }
   .chip .mini{font-size:12px;opacity:.8;cursor:pointer}
   .chip .mini:hover{opacity:1;text-decoration:underline}
+
+  /* Loader overlay */
+  .loader{
+    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:var(--bg);z-index:9999;transition:opacity .25s ease;
+  }
+  .loader.hide{opacity:0;pointer-events:none}
+  .loader-inner{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .tooth{width:64px;height:64px}
+  /* a beállításoknál legyen statikus (nem pörgő) a fogacska */
+  .loader-text{color:var(--muted);font-weight:600}
 </style>
 </head>
 <body>
+<!-- BETÖLTŐ KÉPERNYŐ -->
+<div id="loader" class="loader">
+  <div class="loader-inner">
+    <svg class="tooth" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Betöltés">
+      <path d="M20 8c-6 0-10 5-10 12 0 9 5 14 9 17 4 3 5 15 9 15s5-9 9-9 5 9 9 9 5-12 9-15c4-3 9-8 9-17 0-7-4-12-10-12-5 0-9 2-12 5-3-3-7-5-12-5z" stroke="#2563eb" stroke-width="2" fill="#fff"/>
+      <circle cx="26" cy="24" r="2.5" fill="#0f172a"/>
+      <circle cx="38" cy="24" r="2.5" fill="#0f172a"/>
+      <path d="M24 33c2 3 6 5 8 5s6-2 8-5" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />
+    </svg>
+    <div class="loader-text">Betöltés…</div>
+  </div>
+</div>
+
 <div class="layout">
   <div class="topbar">
     <h1>Beállítások</h1>
@@ -147,6 +171,10 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
+  const loader = document.getElementById('loader');
+  const hideLoader = ()=> loader.classList.add('hide');
+  const showLoader = ()=> loader.classList.remove('hide');
+
   const authCard = document.getElementById('authCard');
   const content = document.getElementById('content');
   const emailEl = document.getElementById('email');
@@ -177,7 +205,7 @@
 
   let uid = null;
   let procedures = []; // string[]
-  let editingIndex = -1; // szerkesztés alatt álló elem indexe
+  let editingIndex = -1;
 
   const applyPreview = ()=>{
     p1.textContent = w1name.value || 'Hely1';
@@ -232,7 +260,6 @@
   function addFromInput(){
     const raw = (procInput.value||'').trim();
     if(!raw) return;
-    // több elem vesszővel elválasztva
     raw.split(',').map(s=>s.trim()).filter(Boolean).forEach(item=>{
       if(!procedures.includes(item)) procedures.push(item);
     });
@@ -263,9 +290,16 @@
   };
 
   onAuthStateChanged(auth, async user=>{
-    if(!user){ authCard.classList.remove('hide'); content.classList.add('hide'); uid=null; return; }
+    if(!user){
+      authCard.classList.remove('hide');
+      content.classList.add('hide');
+      hideLoader();
+      uid=null; return;
+    }
     uid = user.uid;
-    authCard.classList.add('hide'); content.classList.remove('hide');
+    authCard.classList.add('hide');
+    content.classList.remove('hide');
+
     const sRef = doc(db,'users',uid,'meta','settings');
     const snap = await getDoc(sRef);
     if(!snap.exists()){
@@ -281,11 +315,12 @@
     procedures = Array.isArray(s.procedures) ? s.procedures.slice(0,100) : [];
     applyPreview();
     renderProcedures();
+    hideLoader();
   });
 
-  loginBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await signInWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); }catch(e){ authMsg.textContent = e.message; } };
-  registerBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await createUserWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); }catch(e){ authMsg.textContent = e.message; } };
-  logoutBtn.onclick = ()=>signOut(auth);
+  loginBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await signInWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); showLoader(); }catch(e){ authMsg.textContent = e.message; } };
+  registerBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await createUserWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); showLoader(); }catch(e){ authMsg.textContent = e.message; } };
+  logoutBtn.onclick = ()=>{ showLoader(); signOut(auth); };
 
   saveBtn.onclick = async ()=>{
     msgOk.classList.add('hide'); msgErr.classList.add('hide');
