@@ -151,21 +151,19 @@
   const saveErr = document.getElementById('saveErr');
 
   let currentUID = null;
-  // settings + színek
   let settings = {
     w1name:'Hely1', w1pct:0.30, w1color:'#2563eb',
     w2name:'Hely2', w2pct:0.40, w2color:'#16a34a'
   };
 
-  // kontraszt számítás a jó olvashatósághoz
+  // kontraszt számítás
   const hexToRgb = (hex)=>{ const h=hex.replace('#',''); const b=parseInt(h.length===3?h.split('').map(x=>x+x).join(''):h,16); return {r:(b>>16)&255,g:(b>>8)&255,b:b&255}; };
   const contrast = (hex)=>{ const {r,g,b}=hexToRgb(hex||'#999'); const yiq=(r*299+g*587+b*114)/1000; return yiq>=128?'#000':'#fff'; };
 
-  // lokális kulcs a legutóbbi munkahelynek (felhasználónként)
+  // utoljára használt munkahely kulcsa
   const lastKey = ()=> currentUID ? `dent_last_place_${currentUID}` : 'dent_last_place';
 
   function setSelectBG(placeName){
-    // állítsuk a select háttérszínét a hely színére
     const color = (placeName===settings.w1name) ? settings.w1color :
                   (placeName===settings.w2name) ? settings.w2color : '#ffffff';
     workplaceEl.style.background = color;
@@ -173,13 +171,30 @@
     workplaceEl.style.borderColor = color;
   }
 
+  // ---- NEW: színes opciók már a legördülőben is ----
+  function makeColoredOption(name, color){
+    const opt = document.createElement('option');
+    // „● ” pötty + név
+    opt.textContent = `● ${name}`;
+    opt.value = name;
+    // próbáljuk háttérrel is színezni (Chromium/Firefox), és kontrasztos betűszínnel
+    opt.style.background = color;
+    opt.style.color = contrast(color);
+    opt.style.fontWeight = '600';
+    // ha a böngésző figyelmen kívül hagyja a háttérszínt (pl. Safari),
+    // a teljes szöveg színe marad kontrasztos — a pötty akkor is megkülönböztet.
+    return opt;
+  }
+
   function bindWorkplaceOptions(){
     workplaceEl.innerHTML = '';
-    [settings.w1name, settings.w2name].forEach(n=>{
-      const opt=document.createElement('option'); opt.value=n; opt.textContent=n; workplaceEl.appendChild(opt);
-    });
+    const opts = [
+      {name: settings.w1name, color: settings.w1color},
+      {name: settings.w2name, color: settings.w2color}
+    ];
+    opts.forEach(({name,color})=> workplaceEl.appendChild(makeColoredOption(name,color)));
 
-    // default: utoljára használt munkahely (ha van)
+    // alap: utoljára használt
     const last = localStorage.getItem(lastKey());
     if(last){
       const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===last);
@@ -192,7 +207,6 @@
 
   workplaceEl?.addEventListener('change', ()=>{
     setSelectBG(workplaceEl.value);
-    // frissítsük a „legutóbbi” értéket is
     if(currentUID) localStorage.setItem(lastKey(), workplaceEl.value);
   });
 
@@ -254,7 +268,7 @@
     patientEl.value=''; procedureEl.value=''; amountEl.value='';
     dateEl.value = new Date().toISOString().slice(0,10);
 
-    // töltse be a legutóbbit, és állítsa színt
+    // töltse be a legutóbbit
     const last = localStorage.getItem(lastKey());
     if(last){
       const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===last);
@@ -293,8 +307,7 @@
     saveBtn.disabled = true;
     try{
       await addDoc(collection(db,'users',currentUID,'entries'), payload);
-
-      // mentsük le „utoljára használt munkahely”-nek
+      // mentsük a „legutóbbit”
       localStorage.setItem(lastKey(), payload.workplace);
 
       saveOk.classList.remove('hide');
