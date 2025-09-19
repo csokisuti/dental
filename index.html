@@ -27,6 +27,15 @@
   .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
   .muted{color:var(--muted);font-size:12px}
   .nav{display:flex;gap:8px;align-items:center}
+
+  /* Gyors beavatkozás kártyák */
+  .quick-wrap{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:8px 10px;border:1px solid var(--line);border-radius:999px;
+    background:#fff;cursor:pointer;font-weight:600
+  }
+  .chip-btn:hover{box-shadow:0 2px 10px rgba(15,23,42,.08)}
 </style>
 </head>
 <body>
@@ -85,6 +94,8 @@
       <div>
         <label>Beavatkozás</label>
         <input type="text" id="procedure" placeholder="Pl. tömés, gyökérkezelés…">
+        <!-- Gyors beavatkozások (kattintható kártyák) -->
+        <div id="quickProcedures" class="quick-wrap"></div>
       </div>
 
       <div class="row">
@@ -142,6 +153,7 @@
   const dateEl = document.getElementById('date');
   const patientEl = document.getElementById('patient');
   const procedureEl = document.getElementById('procedure');
+  const quickWrap = document.getElementById('quickProcedures');
   const amountEl = document.getElementById('amount');
   const workplaceEl = document.getElementById('workplace');
   const resetBtn = document.getElementById('resetBtn');
@@ -153,7 +165,8 @@
   let currentUID = null;
   let settings = {
     w1name:'Hely1', w1pct:0.30, w1color:'#2563eb',
-    w2name:'Hely2', w2pct:0.40, w2color:'#16a34a'
+    w2name:'Hely2', w2pct:0.40, w2color:'#16a34a',
+    procedures: [] // gyors beavatkozások
   };
 
   // kontraszt számítás
@@ -171,18 +184,14 @@
     workplaceEl.style.borderColor = color;
   }
 
-  // ---- NEW: színes opciók már a legördülőben is ----
+  // színes opciók már a legördülőben is
   function makeColoredOption(name, color){
     const opt = document.createElement('option');
-    // „● ” pötty + név
     opt.textContent = `● ${name}`;
     opt.value = name;
-    // próbáljuk háttérrel is színezni (Chromium/Firefox), és kontrasztos betűszínnel
     opt.style.background = color;
     opt.style.color = contrast(color);
     opt.style.fontWeight = '600';
-    // ha a böngésző figyelmen kívül hagyja a háttérszínt (pl. Safari),
-    // a teljes szöveg színe marad kontrasztos — a pötty akkor is megkülönböztet.
     return opt;
   }
 
@@ -194,7 +203,6 @@
     ];
     opts.forEach(({name,color})=> workplaceEl.appendChild(makeColoredOption(name,color)));
 
-    // alap: utoljára használt
     const last = localStorage.getItem(lastKey());
     if(last){
       const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===last);
@@ -209,6 +217,35 @@
     setSelectBG(workplaceEl.value);
     if(currentUID) localStorage.setItem(lastKey(), workplaceEl.value);
   });
+
+  function appendProcedureText(txt){
+    const cur = (procedureEl.value || '').trim();
+    if(!cur) procedureEl.value = txt;
+    else {
+      // ha már vesszővel végződik, ne tegyünk dupla szóközt
+      const sep = cur.endsWith(',') ? ' ' : ', ';
+      procedureEl.value = cur + sep + txt;
+    }
+    procedureEl.dispatchEvent(new Event('input'));
+  }
+
+  function renderQuickProcedures(){
+    quickWrap.innerHTML = '';
+    (settings.procedures || []).forEach(name=>{
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip-btn';
+      b.textContent = name;
+      b.addEventListener('click', ()=> appendProcedureText(name));
+      quickWrap.appendChild(b);
+    });
+    if((settings.procedures||[]).length===0){
+      const span = document.createElement('span');
+      span.className='muted';
+      span.textContent='(A gyors beavatkozások itt fognak megjelenni. Add hozzá őket a Beállítások oldalon.)';
+      quickWrap.appendChild(span);
+    }
+  }
 
   function uiAuth(isLogged, user){
     if(isLogged){
@@ -260,8 +297,10 @@
       settings.w2pct   = s.w2pct   ?? settings.w2pct;
       settings.w1color = s.w1color ?? settings.w1color;
       settings.w2color = s.w2color ?? settings.w2color;
+      settings.procedures = Array.isArray(s.procedures) ? s.procedures : [];
     }
     bindWorkplaceOptions();
+    renderQuickProcedures();
   }
 
   function clearForm(){
