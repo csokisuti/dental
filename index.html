@@ -3,45 +3,38 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fogorvosi bevételkövető (Firebase)</title>
+<title>Fogorvosi bevételkövető – Rögzítés</title>
 <style>
-  :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--danger:#ef4444;--shadow:0 6px 25px rgba(15,23,42,.08)}
+  :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--danger:#ef4444;--ok:#16a34a;--shadow:0 6px 25px rgba(15,23,42,.08)}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
-  .layout{max-width:1100px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+  .layout{max-width:700px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
   h1{font-size:20px;margin:0 0 8px}
   h2{font-size:16px;margin:0 0 10px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-  input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
-  textarea{min-height:60px;resize:vertical}
+  input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .toolbar{display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:10px}
   .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
   .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
-  .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-  th{font-size:12px;color:var(--muted);font-weight:600}
-  .right{text-align:right}
-  .pill{display:inline-block;padding:2px 8px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:12px}
-  .small{font-size:12px;color:var(--muted)}
-  .total{font-weight:700}
-  .ktable{width:100%;overflow:auto}
-  .nowrap{white-space:nowrap}
-  .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
   .hide{display:none}
+  .alert{padding:10px 12px;border-radius:10px;font-weight:600}
+  .alert.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+  .alert.err{background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .muted{color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
 <div class="layout" id="app">
   <div class="topbar">
-    <h1>Fogorvosi bevételkövető</h1>
-    <div id="userBox" class="small"></div>
+    <h1>Fogorvosi bevételkövető – Rögzítés</h1>
+    <div id="userBox" class="muted"></div>
   </div>
 
-  <!-- Auth kártya -->
+  <!-- Auth -->
   <div class="card" id="authCard">
     <h2>Bejelentkezés</h2>
     <div class="row">
@@ -54,22 +47,24 @@
         <input type="password" id="password">
       </div>
     </div>
-    <div class="toolbar" style="margin-top:10px">
+    <div class="toolbar">
       <button class="btn primary" id="loginBtn">Belépés</button>
       <button class="btn" id="registerBtn">Regisztráció</button>
     </div>
-    <div class="small" id="authMsg"></div>
+    <div class="muted" id="authMsg"></div>
   </div>
 
-  <!-- App tartalom -->
+  <!-- Rögzítő oldal -->
   <div id="appContent" class="hide">
     <div class="card">
       <div class="topbar">
         <h2>Új bejegyzés</h2>
-        <div class="toolbar">
-          <button class="btn" id="logoutBtn">Kijelentkezés</button>
-        </div>
+        <button class="btn" id="logoutBtn">Kijelentkezés</button>
       </div>
+
+      <div id="saveOk" class="alert ok hide">Sikeresen mentve ✓</div>
+      <div id="saveErr" class="alert err hide"></div>
+
       <div class="row">
         <div>
           <label>Dátum</label>
@@ -80,134 +75,23 @@
           <input type="text" id="patient" placeholder="Pl. Kiss Anna">
         </div>
       </div>
+
       <div>
         <label>Beavatkozás</label>
         <input type="text" id="procedure" placeholder="Pl. tömés, gyökérkezelés…">
       </div>
-      <div class="row3">
-        <div>
-          <label>Munkahely</label>
-          <select id="workplace"></select>
-        </div>
-        <div>
-          <label>Fizetett összeg (HUF)</label>
-          <input type="number" id="amount" min="0" step="1" placeholder="pl. 25000">
-        </div>
-        <div>
-          <label>Fizetési mód (opcionális)</label>
-          <select id="payment">
-            <option value="">–</option>
-            <option>Készpénz</option>
-            <option>Bankkártya</option>
-            <option>Átutalás</option>
-          </select>
-        </div>
-      </div>
+
       <div>
-        <label>Megjegyzés (opcionális)</label>
-        <textarea id="note" placeholder="Fog/kvadráns, TB kód, stb."></textarea>
+        <label>Fizetett összeg (HUF)</label>
+        <input type="number" id="amount" min="0" step="1" placeholder="pl. 25000">
       </div>
-      <div class="toolbar" style="justify-content:flex-end;margin-top:10px">
+
+      <div class="toolbar">
         <button class="btn" id="resetBtn">Mezők törlése</button>
         <button class="btn primary" id="saveBtn">Mentés</button>
       </div>
-    </div>
 
-    <div class="card">
-      <h2>Beállítások</h2>
-      <div class="row">
-        <div>
-          <label>Hely 1 neve</label>
-          <input type="text" id="w1name" placeholder="Pl. Rendelő A">
-        </div>
-        <div>
-          <label>Hely 1 – Saját % (0–1)</label>
-          <input type="number" id="w1pct" min="0" max="1" step="0.01" placeholder="0.30">
-        </div>
-      </div>
-      <div class="row">
-        <div>
-          <label>Hely 2 neve</label>
-          <input type="text" id="w2name" placeholder="Pl. Rendelő B">
-        </div>
-        <div>
-          <label>Hely 2 – Saját % (0–1)</label>
-          <input type="number" id="w2pct" min="0" max="1" step="0.01" placeholder="0.40">
-        </div>
-      </div>
-      <div class="toolbar" style="justify-content:flex-end;margin-top:10px">
-        <button class="btn" id="saveSettings">Beállítások mentése</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Szűrők</h2>
-      <div class="row3">
-        <div>
-          <label>Hónap</label>
-          <input type="month" id="filterMonth">
-        </div>
-        <div>
-          <label>Munkahely</label>
-          <select id="filterWorkplace"><option value="">Mind</option></select>
-        </div>
-        <div>
-          <label>Páciens</label>
-          <input type="text" id="filterPatient" placeholder="Keresés névre">
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Bejegyzések</h2>
-      <div class="ktable">
-        <table id="entriesTable">
-          <thead>
-            <tr>
-              <th class="nowrap">Dátum</th>
-              <th>Páciens</th>
-              <th>Beavatkozás</th>
-              <th>Munkahely</th>
-              <th class="right nowrap">Fizetett (HUF)</th>
-              <th class="right nowrap">%-om</th>
-              <th class="right nowrap">Saját (HUF)</th>
-              <th>Megjegyzés</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-          <tfoot>
-            <tr>
-              <td colspan="4" class="right total">Összesen (szűrt):</td>
-              <td class="right total" id="sumGross">0</td>
-              <td></td>
-              <td class="right total" id="sumOwn">0</td>
-              <td></td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Havi összesítő</h2>
-      <div class="ktable">
-        <table id="monthTable">
-          <thead>
-            <tr>
-              <th>Hónap</th>
-              <th class="right nowrap" id="h1OwnHeader">Hely1 – Saját</th>
-              <th class="right nowrap" id="h2OwnHeader">Hely2 – Saját</th>
-              <th class="right nowrap">Saját összes</th>
-              <th class="right nowrap" id="h1GrossHeader">Hely1 – Bruttó</th>
-              <th class="right nowrap" id="h2GrossHeader">Hely2 – Bruttó</th>
-              <th class="right nowrap">Bruttó összes</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      <div class="muted">A bejegyzés elmentésre kerül a felhőbe. A részletes adatok (munkahely, százalékok, listák, havi bontás) külön oldalon lesznek.</div>
     </div>
   </div>
 </div>
@@ -215,22 +99,24 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
+  // >>> Töltsd ki a SAJÁT configoddal (már megvan nálad)
   const firebaseConfig = {
-  apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
-  authDomain: "dental-38375.firebaseapp.com",
-  projectId: "dental-38375",
-  storageBucket: "dental-38375.firebasestorage.app",
-  messagingSenderId: "245424156358",
-  appId: "1:245424156358:web:e6426588b20675756331c7",
-  measurementId: "G-WC90WMHRZT"
-};
+    apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
+    authDomain: "dental-38375.firebaseapp.com",
+    projectId: "dental-38375",
+    storageBucket: "dental-38375.appspot.com",
+    messagingSenderId: "245424156358",
+    appId: "1:245424156358:web:e6426588b20675756331c7",
+    measurementId: "G-WC90WMHRZT"
+  };
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
 
+  // UI elemek
   const authCard = document.getElementById('authCard');
   const appContent = document.getElementById('appContent');
   const userBox = document.getElementById('userBox');
@@ -244,53 +130,27 @@
   const dateEl = document.getElementById('date');
   const patientEl = document.getElementById('patient');
   const procedureEl = document.getElementById('procedure');
-  const workplaceEl = document.getElementById('workplace');
   const amountEl = document.getElementById('amount');
-  const paymentEl = document.getElementById('payment');
-  const noteEl = document.getElementById('note');
   const resetBtn = document.getElementById('resetBtn');
   const saveBtn = document.getElementById('saveBtn');
 
-  const w1nameEl = document.getElementById('w1name');
-  const w1pctEl = document.getElementById('w1pct');
-  const w2nameEl = document.getElementById('w2name');
-  const w2pctEl = document.getElementById('w2pct');
-  const saveSettingsBtn = document.getElementById('saveSettings');
+  const saveOk = document.getElementById('saveOk');
+  const saveErr = document.getElementById('saveErr');
 
-  const filterMonthEl = document.getElementById('filterMonth');
-  const filterWorkplaceEl = document.getElementById('filterWorkplace');
-  const filterPatientEl = document.getElementById('filterPatient');
-
-  const entriesTableBody = document.querySelector('#entriesTable tbody');
-  const sumGrossEl = document.getElementById('sumGross');
-  const sumOwnEl = document.getElementById('sumOwn');
-
-  const monthTableBody = document.querySelector('#monthTable tbody');
-  const h1OwnHeader = document.getElementById('h1OwnHeader');
-  const h2OwnHeader = document.getElementById('h2OwnHeader');
-  const h1GrossHeader = document.getElementById('h1GrossHeader');
-  const h2GrossHeader = document.getElementById('h2GrossHeader');
-
-  const fmtHUF = n => (n||0).toLocaleString('hu-HU',{maximumFractionDigits:0});
-  const monthKeyFromDate = d => { const dt = new Date(d); return isNaN(dt)?'':dt.toISOString().slice(0,7); };
-
-  let unsubEntries = null;
   let currentUID = null;
-  let settings = { w1name:'Hely1', w1pct:0.30, w2name:'Hely2', w2pct:0.40 };
-  let entriesCache = []; // realtime snapshotból
 
+  // Auth UI váltás
   function uiAuth(isLogged, user){
     if(isLogged){
       authCard.classList.add('hide');
       appContent.classList.remove('hide');
       userBox.textContent = user.email;
-      const today = new Date().toISOString().slice(0,10);
-      dateEl.value = today;
+      dateEl.value = new Date().toISOString().slice(0,10);
+      patientEl.focus();
     }else{
       authCard.classList.remove('hide');
       appContent.classList.add('hide');
       userBox.textContent = '';
-      if(unsubEntries){ unsubEntries(); unsubEntries=null; }
     }
   }
 
@@ -312,211 +172,60 @@
     if(!user){ uiAuth(false); return; }
     currentUID = user.uid;
     uiAuth(true, user);
-    await ensureDefaults();
-    await loadSettings();
-    bindWorkplaceUI();
-    liveEntries();
-  });
-
-  async function ensureDefaults(){
-    const sRef = doc(db, 'users', currentUID, 'meta', 'settings');
+    // alap settings doc létrehozása, ha később kell
+    const sRef = doc(db,'users',currentUID,'meta','settings');
     const snap = await getDoc(sRef);
     if(!snap.exists()){
-      await setDoc(sRef, settings);
+      await setDoc(sRef,{ w1name:'Hely1', w1pct:0.30, w2name:'Hely2', w2pct:0.40 });
     }
+  });
+
+  // Űrlap törlése
+  function clearForm(){
+    patientEl.value=''; procedureEl.value=''; amountEl.value='';
+    dateEl.value = new Date().toISOString().slice(0,10);
+    patientEl.focus();
   }
+  resetBtn.onclick = clearForm;
 
-  async function loadSettings(){
-    const sRef = doc(db, 'users', currentUID, 'meta', 'settings');
-    const snap = await getDoc(sRef);
-    if(snap.exists()){
-      settings = snap.data();
-    }
-    w1nameEl.value = settings.w1name;
-    w1pctEl.value = settings.w1pct;
-    w2nameEl.value = settings.w2name;
-    w2pctEl.value = settings.w2pct;
-    h1OwnHeader.textContent = `${settings.w1name} – Saját`;
-    h2OwnHeader.textContent = `${settings.w2name} – Saját`;
-    h1GrossHeader.textContent = `${settings.w1name} – Bruttó`;
-    h2GrossHeader.textContent = `${settings.w2name} – Bruttó`;
-  }
-
-  function bindWorkplaceUI(){
-    workplaceEl.innerHTML = '';
-    [settings.w1name, settings.w2name].forEach(n=>{
-      const opt = document.createElement('option'); opt.value=n; opt.textContent=n; workplaceEl.appendChild(opt);
-    });
-    filterWorkplaceEl.innerHTML = '<option value="">Mind</option>';
-    [settings.w1name, settings.w2name].forEach(n=>{
-      const opt = document.createElement('option'); opt.value=n; opt.textContent=n; filterWorkplaceEl.appendChild(opt);
-    });
-  }
-
-  saveSettingsBtn.onclick = async ()=>{
-    settings = {
-      w1name: w1nameEl.value.trim() || 'Hely1',
-      w1pct: Math.max(0,Math.min(1,+w1pctEl.value||0.30)),
-      w2name: w2nameEl.value.trim() || 'Hely2',
-      w2pct: Math.max(0,Math.min(1,+w2pctEl.value||0.40))
-    };
-    await setDoc(doc(db,'users',currentUID,'meta','settings'), settings, {merge:true});
-    bindWorkplaceUI();
-    renderEntries();
-    renderMonthly();
-    alert('Beállítások elmentve.');
-  };
-
-  function pctForWorkplace(name){
-    if(name===settings.w1name) return +settings.w1pct||0;
-    if(name===settings.w2name) return +settings.w2pct||0;
-    return 0;
-  }
-
-  resetBtn.onclick = ()=>{
-    patientEl.value=''; procedureEl.value=''; amountEl.value=''; paymentEl.value=''; noteEl.value='';
-    workplaceEl.selectedIndex=0;
-    saveBtn.dataset.editing='';
-    saveBtn.textContent='Mentés';
-  };
-
+  // Mentés
   saveBtn.onclick = async ()=>{
+    saveOk.classList.add('hide');
+    saveErr.classList.add('hide');
+    saveErr.textContent = '';
+
     const payload = {
       date: dateEl.value,
-      patient: patientEl.value.trim(),
-      procedure: procedureEl.value.trim(),
-      workplace: workplaceEl.value,
+      patient: (patientEl.value||'').trim(),
+      procedure: (procedureEl.value||'').trim(),
       amount: Math.max(0, Math.round(+amountEl.value||0)),
-      payment: paymentEl.value,
-      note: noteEl.value.trim()
+      // a többi mezőt később, a másik oldalon kezeljük:
+      workplace: null,
+      pctAtSave: null,
+      ownAtSave: null,
+      createdAt: Date.now()
     };
-    if(!payload.date || !payload.patient || !payload.procedure || !payload.workplace || !payload.amount){
-      alert('Tölts ki minden kötelező mezőt.'); return;
-    }
-    const pct = pctForWorkplace(payload.workplace);
-    const own = Math.round(payload.amount * pct);
 
-    const editingId = saveBtn.dataset.editing;
-    if(editingId){
-      await updateDoc(doc(db,'users',currentUID,'entries',editingId), {
-        ...payload, pctAtSave:pct, ownAtSave:own, updatedAt: Date.now()
-      });
-    }else{
-      await addDoc(collection(db,'users',currentUID,'entries'), {
-        ...payload, pctAtSave:pct, ownAtSave:own, createdAt: Date.now()
-      });
+    if(!payload.date || !payload.patient || !payload.procedure || !payload.amount){
+      saveErr.textContent = 'Kérlek tölts ki minden mezőt (dátum, név, beavatkozás, összeg).';
+      saveErr.classList.remove('hide');
+      return;
     }
-    resetBtn.click();
+
+    saveBtn.disabled = true;
+    try{
+      await addDoc(collection(db,'users',currentUID,'entries'), payload);
+      saveOk.classList.remove('hide');
+      // 2 másodperc múlva elhalványítjuk
+      setTimeout(()=>saveOk.classList.add('hide'), 2000);
+      clearForm();
+    }catch(err){
+      saveErr.textContent = err?.message || 'Mentési hiba.';
+      saveErr.classList.remove('hide');
+    }finally{
+      saveBtn.disabled = false;
+    }
   };
-
-  function applyFilters(list){
-    const m = filterMonthEl.value;
-    const w = filterWorkplaceEl.value;
-    const p = filterPatientEl.value.trim().toLowerCase();
-    return list.filter(e=>{
-      const okM = m ? monthKeyFromDate(e.date)===m : true;
-      const okW = w ? e.workplace===w : true;
-      const okP = p ? (e.patient||'').toLowerCase().includes(p) : true;
-      return okM && okW && okP;
-    }).sort((a,b)=> (a.date>b.date?-1:1));
-  }
-
-  function renderEntries(){
-    const filtered = applyFilters(entriesCache);
-    entriesTableBody.innerHTML = '';
-    let sumGross=0, sumOwn=0;
-    for(const e of filtered){
-      sumGross += +e.amount||0;
-      sumOwn   += +e.ownAtSave||0;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="nowrap">${e.date||''}</td>
-        <td>${e.patient||''}</td>
-        <td>${e.procedure||''}</td>
-        <td><span class="pill">${e.workplace||''}</span></td>
-        <td class="right">${fmtHUF(e.amount)}</td>
-        <td class="right">${((e.pctAtSave||0)*100).toFixed(0)}%</td>
-        <td class="right">${fmtHUF(e.ownAtSave)}</td>
-        <td class="small">${e.note?e.note:''}${e.payment?`<div class="small">Fizetés: ${e.payment}</div>`:''}</td>
-        <td class="nowrap">
-          <button class="btn small" data-edit="${e.id}">Szerk.</button>
-          <button class="btn danger small" data-del="${e.id}">Törlés</button>
-        </td>`;
-      entriesTableBody.appendChild(tr);
-    }
-    sumGrossEl.textContent = fmtHUF(sumGross);
-    sumOwnEl.textContent = fmtHUF(sumOwn);
-  }
-
-  function renderMonthly(){
-    const map = new Map();
-    for(const e of entriesCache){
-      const m = monthKeyFromDate(e.date);
-      if(!m) continue;
-      if(!map.has(m)) map.set(m,{h1Gross:0,h2Gross:0,h1Own:0,h2Own:0});
-      const b = map.get(m);
-      if(e.workplace===settings.w1name){ b.h1Gross += +e.amount||0; b.h1Own += +e.ownAtSave||0; }
-      else if(e.workplace===settings.w2name){ b.h2Gross += +e.amount||0; b.h2Own += +e.ownAtSave||0; }
-    }
-    const months = Array.from(map.keys()).sort().reverse();
-    monthTableBody.innerHTML='';
-    for(const m of months){
-      const b = map.get(m);
-      const ownAll = b.h1Own + b.h2Own;
-      const grossAll = b.h1Gross + b.h2Gross;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="nowrap">${m}</td>
-        <td class="right">${fmtHUF(b.h1Own)}</td>
-        <td class="right">${fmtHUF(b.h2Own)}</td>
-        <td class="right total">${fmtHUF(ownAll)}</td>
-        <td class="right">${fmtHUF(b.h1Gross)}</td>
-        <td class="right">${fmtHUF(b.h2Gross)}</td>
-        <td class="right total">${fmtHUF(grossAll)}</td>`;
-      monthTableBody.appendChild(tr);
-    }
-  }
-
-  document.getElementById('entriesTable').addEventListener('click', async (e)=>{
-    const delId = e.target.getAttribute('data-del');
-    const editId = e.target.getAttribute('data-edit');
-    if(delId){
-      if(confirm('Biztosan törlöd?')){
-        await deleteDoc(doc(db,'users',currentUID,'entries',delId));
-      }
-    }else if(editId){
-      const it = entriesCache.find(x=>x.id===editId);
-      if(!it) return;
-      dateEl.value = it.date||'';
-      patientEl.value = it.patient||'';
-      procedureEl.value = it.procedure||'';
-      const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===it.workplace);
-      workplaceEl.selectedIndex = idx>=0?idx:0;
-      amountEl.value = it.amount||'';
-      paymentEl.value = it.payment||'';
-      noteEl.value = it.note||'';
-      saveBtn.dataset.editing = it.id;
-      saveBtn.textContent = 'Módosítás mentése';
-      window.scrollTo({top:0,behavior:'smooth'});
-    }
-  });
-
-  [filterMonthEl, filterWorkplaceEl, filterPatientEl].forEach(el=>{
-    el.addEventListener('input', ()=>renderEntries());
-    el.addEventListener('change', ()=>renderEntries());
-  });
-
-  function liveEntries(){
-    if(unsubEntries){ unsubEntries(); }
-    const qRef = query(collection(db,'users',currentUID,'entries'), orderBy('date','desc'));
-    unsubEntries = onSnapshot(qRef, (snap)=>{
-      const arr = [];
-      snap.forEach(d=> arr.push({id:d.id, ...d.data()}));
-      entriesCache = arr;
-      renderEntries();
-      renderMonthly();
-    });
-  }
 </script>
 </body>
 </html>
