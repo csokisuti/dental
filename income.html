@@ -2,32 +2,75 @@
 <html lang="hu">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<!-- iOS főképernyős "app" beállítások (ugyanaz ikon, mint indexen) -->
+<link rel="apple-touch-icon" href="dent.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Bevételkövető">
+<meta name="theme-color" content="#2563eb">
+
 <title>Bevételek – Fogorvosi bevételkövető</title>
 <style>
-  :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--danger:#ef4444;--shadow:0 6px 25px rgba(15,23,42,.08)}
+  :root{
+    --bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;
+    --primary:#2563eb;--danger:#ef4444;--shadow:0 6px 25px rgba(15,23,42,.08)
+  }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+  html,body{height:100%}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+             env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
   .layout{max-width:1100px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
   h1{margin:0 0 6px;font-size:20px}
+  h2{margin:0 0 10px;font-size:16px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-  input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+
+  input,select{
+    width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;
+    font-size:16px; /* iOS ne zoomoljon */
+    appearance:none;-webkit-appearance:none;
+  }
+  select{
+    background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),
+                      linear-gradient(135deg, #94a3b8 50%, transparent 50%),
+                      linear-gradient(to right, transparent, transparent);
+    background-position: calc(100% - 16px) 50%, calc(100% - 12px) 50%, 0 0;
+    background-size: 6px 6px, 6px 6px, 100% 100%;
+    background-repeat: no-repeat;
+    padding-right:36px;
+  }
+
   .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;text-decoration:none;color:inherit}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+  .btn{
+    display:inline-flex;align-items:center;gap:6px;padding:12px 14px;border:1px solid var(--line);
+    border-radius:10px;background:#fff;cursor:pointer;text-decoration:none;color:inherit;
+    font-size:16px;min-height:44px;touch-action:manipulation;
+  }
   .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
   .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+
   table{width:100%;border-collapse:collapse}
   th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
   th{font-size:12px;color:var(--muted);font-weight:600}
   .right{text-align:right}
   .pill{display:inline-block;padding:2px 8px;border:1px solid var(--line);border-radius:999px;font-size:12px;font-weight:600}
-  .ktable{width:100%;overflow:auto}
+  .ktable{width:100%;overflow:auto;-webkit-overflow-scrolling:touch}
   .total{font-weight:700}
   .muted{color:var(--muted);font-size:12px}
-  .hide{display:none}
+  .hide{display:none !important}
   .ok{padding:8px 10px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
   .err{padding:8px 10px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
 
@@ -35,6 +78,8 @@
   .loader{
     position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
     background:var(--bg);z-index:9999;transition:opacity .25s ease;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+             env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
   .loader.hide{opacity:0;pointer-events:none}
   .loader-inner{display:flex;flex-direction:column;align-items:center;gap:12px}
@@ -42,6 +87,14 @@
   .spin{animation:spin 1.1s linear infinite}
   @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   .loader-text{color:var(--muted);font-weight:600}
+
+  @media (max-width: 640px){
+    .layout{padding:16px}
+    .row{grid-template-columns:1fr}
+    .row2{grid-template-columns:1fr}
+    .btn{width:100%}
+    th,td{padding:8px}
+  }
 </style>
 </head>
 <body>
@@ -61,7 +114,7 @@
 <div class="layout">
   <div class="topbar">
     <h1>Bevételek</h1>
-    <div>
+    <div class="nav">
       <a class="btn" href="index.html">Rögzítés</a>
       <a class="btn" href="settings.html">Beállítások</a>
       <button class="btn" id="logoutBtn">Kijelentkezés</button>
@@ -72,14 +125,14 @@
     <div class="row2">
       <div>
         <label>E-mail</label>
-        <input id="email" type="email">
+        <input id="email" type="email" inputmode="email" autocomplete="username">
       </div>
       <div>
         <label>Jelszó</label>
-        <input id="password" type="password">
+        <input id="password" type="password" autocomplete="current-password">
       </div>
     </div>
-    <div style="margin-top:10px;display:flex;gap:8px">
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn primary" id="loginBtn">Belépés</button>
       <button class="btn" id="registerBtn">Regisztráció</button>
     </div>
@@ -128,17 +181,14 @@
     <div class="row2" style="margin-top:10px">
       <div>
         <label>Összeg (HUF)</label>
-        <input id="editAmount" type="number" min="0" step="1">
+        <input id="editAmount" type="number" min="0" step="1" inputmode="numeric">
       </div>
       <div>
         <label>Munkahely</label>
         <select id="editWorkplace"></select>
       </div>
     </div>
-    <div class="muted" style="margin-top:8px">
-      Mentéskor a kiválasztott munkahely aktuális %-ával számoljuk a saját részt (és eltároljuk a bejegyzésben).
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap">
       <button class="btn" id="cancelEdit">Mégse</button>
       <button class="btn primary" id="saveEdit">Mentés</button>
     </div>
@@ -252,7 +302,7 @@
   }
 
   // snapshot frissítésekor ne számoljuk újra végtelenségig
-  const updatedOnce = new Set(); // id-k, amelyeket már normalizáltunk
+  const updatedOnce = new Set();
 
   async function normalizeMissingCalculations(list){
     const ops = [];
@@ -270,7 +320,7 @@
           updateDoc(doc(db,'users',uid,'entries',e.id), {
             pctAtSave: shouldHavePct,
             ownAtSave: computedOwn
-          }).catch(()=>{}) // ha nincs jogosultság/hiba, ne álljon meg a többi
+          }).catch(()=>{})
         );
       }
     }
@@ -291,21 +341,21 @@
     filters.classList.remove('hide');
     listCard.classList.remove('hide');
 
-    // >>> Alapértelmezett: aktuális hónap (YYYY-MM)
+    // Alapértelmezett: aktuális hónap (YYYY-MM)
     filterMonth.value = new Date().toISOString().slice(0, 7);
 
     // settings betöltés
     const sRef = doc(db,'users',uid,'meta','settings');
     const snap = await getDoc(sRef);
     if(!snap.exists()){
-      await setDoc(sRef, settings); // default
+      await setDoc(sRef, settings);
     } else {
       settings = { ...settings, ...snap.data() };
     }
 
     // legördülők
-    bindWorkplaceSelect(filterWorkplace, /*withAll*/ true);
-    bindWorkplaceSelect(editWorkplace, /*withAll*/ false);
+    bindWorkplaceSelect(filterWorkplace, true);
+    bindWorkplaceSelect(editWorkplace, false);
 
     // entries realtime
     const qRef = query(collection(db,'users',uid,'entries'), orderBy('date','desc'));
@@ -316,13 +366,13 @@
       await normalizeMissingCalculations(entries);
 
       render();
-      hideLoader(); // első render után elrejtjük a loadert
+      hideLoader(); // első render után
     });
   });
 
-  loginBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await signInWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); loader.classList.remove('hide'); }catch(e){ authMsg.textContent=e.message; } };
-  registerBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await createUserWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); loader.classList.remove('hide'); }catch(e){ authMsg.textContent=e.message; } };
-  logoutBtn.onclick = ()=>{ loader.classList.remove('hide'); signOut(auth); };
+  loginBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await signInWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); showLoader(); }catch(e){ authMsg.textContent=e.message; } };
+  registerBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await createUserWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); showLoader(); }catch(e){ authMsg.textContent=e.message; } };
+  logoutBtn.onclick = ()=>{ showLoader(); signOut(auth); };
 
   [filterMonth, filterWorkplace, filterPatient].forEach(el=>{
     el.addEventListener('input', render);
