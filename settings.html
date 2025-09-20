@@ -2,26 +2,67 @@
 <html lang="hu">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<!-- iOS főképernyős "app" beállítások (egyezzen az ikonfájlod nevével) -->
+<link rel="apple-touch-icon" href="dent.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Bevételkövető">
+<meta name="theme-color" content="#2563eb">
+
 <title>Beállítások – Fogorvosi bevételkövető</title>
 <style>
-  :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--shadow:0 6px 25px rgba(15,23,42,.08)}
+  :root{
+    --bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;
+    --primary:#2563eb;--shadow:0 6px 25px rgba(15,23,42,.08)
+  }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
+  html,body{height:100%}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+             env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
   .layout{max-width:800px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
   h1{margin:0 0 6px;font-size:20px}
   h2{margin:0 0 10px;font-size:16px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-  input, .row input, .row select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+
+  /* Form elemek – 16px, hogy iOS ne zoomoljon */
+  input, .row input, .row select{
+    width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;
+    font-size:16px;appearance:none;-webkit-appearance:none;
+  }
+  /* Select kis nyíl */
+  .row select{
+    background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),
+                      linear-gradient(135deg, #94a3b8 50%, transparent 50%),
+                      linear-gradient(to right, transparent, transparent);
+    background-position: calc(100% - 16px) 50%, calc(100% - 12px) 50%, 0 0;
+    background-size: 6px 6px, 6px 6px, 100% 100%;
+    background-repeat: no-repeat;
+    padding-right:36px;
+  }
+
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-  .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;text-decoration:none;color:inherit}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:6px;padding:12px 14px;border:1px solid var(--line);
+    border-radius:10px;background:#fff;cursor:pointer;text-decoration:none;color:inherit;
+    font-size:16px;min-height:44px;touch-action:manipulation;
+  }
   .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
   .muted{color:var(--muted);font-size:12px}
-  .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid var(--line);font-weight:600}
-  .hide{display:none}
+  .pill{display:inline-block;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-weight:600}
+
+  .hide{display:none !important}
   .ok{padding:10px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
   .err{padding:10px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
 
@@ -34,16 +75,24 @@
   .chip .mini{font-size:12px;opacity:.8;cursor:pointer}
   .chip .mini:hover{opacity:1;text-decoration:underline}
 
-  /* Loader overlay */
+  /* Loader overlay (safe-area) */
   .loader{
     position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
     background:var(--bg);z-index:9999;transition:opacity .25s ease;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+             env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
   .loader.hide{opacity:0;pointer-events:none}
   .loader-inner{display:flex;flex-direction:column;align-items:center;gap:12px}
   .tooth{width:64px;height:64px}
-  /* a beállításoknál legyen statikus (nem pörgő) a fogacska */
   .loader-text{color:var(--muted);font-weight:600}
+
+  @media (max-width: 640px){
+    .layout{padding:16px}
+    .row{grid-template-columns:1fr}
+    .row3{grid-template-columns:1fr}
+    .btn{width:100%}
+  }
 </style>
 </head>
 <body>
@@ -63,7 +112,7 @@
 <div class="layout">
   <div class="topbar">
     <h1>Beállítások</h1>
-    <div>
+    <div class="nav">
       <a class="btn" href="index.html">Rögzítés</a>
       <a class="btn" href="income.html">Bevételek</a>
       <button class="btn" id="logoutBtn">Kijelentkezés</button>
@@ -74,14 +123,14 @@
     <div class="row">
       <div>
         <label>E-mail</label>
-        <input type="email" id="email">
+        <input type="email" id="email" inputmode="email" autocomplete="username">
       </div>
       <div>
         <label>Jelszó</label>
-        <input type="password" id="password">
+        <input type="password" id="password" autocomplete="current-password">
       </div>
     </div>
-    <div style="margin-top:10px;display:flex;gap:8px">
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn primary" id="loginBtn">Belépés</button>
       <button class="btn" id="registerBtn">Regisztráció</button>
     </div>
@@ -137,7 +186,7 @@
         <label>Megnevezés</label>
         <input id="procInput" placeholder="Pl. Tömések, Gyökérkezelés, Fogkőeltávolítás">
       </div>
-      <div style="display:flex;align-items:flex-end;gap:8px">
+      <div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap">
         <button class="btn" id="procAddBtn">Hozzáadás</button>
         <button class="btn" id="procSaveEditBtn" style="display:none">Szerkesztés mentése</button>
         <button class="btn" id="procCancelEditBtn" style="display:none">Mégse</button>
@@ -146,7 +195,7 @@
     <div class="muted" style="margin-top:6px">Tipp: vesszővel elválasztva több elemet is hozzáadhatsz egyszerre.</div>
     <div id="procList" class="chip-list"></div>
 
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap">
       <button class="btn primary" id="saveBtn">Beállítások mentése</button>
     </div>
   </div>
