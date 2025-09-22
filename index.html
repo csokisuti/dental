@@ -155,7 +155,11 @@
   const saveErr = document.getElementById('saveErr');
 
   let currentUID = null;
-  let settings = { w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a', procedures:[] };
+  let settings = {
+    w1name:'Hely1', w1pct:0.30, w1color:'#2563eb',
+    w2name:'Hely2', w2pct:0.40, w2color:'#16a34a',
+    proceduresByPlace:{ w1:[], w2:[] }
+  };
 
   const hideLoader = ()=> loader.classList.add('hide');
   const showLoader = ()=> loader.classList.remove('hide');
@@ -188,37 +192,54 @@
     }else workplaceEl.selectedIndex = 0;
     setSelectBG(workplaceEl.value);
   }
-  workplaceEl.addEventListener('change', ()=>{
-    setSelectBG(workplaceEl.value);
-    if(currentUID) localStorage.setItem(lastKey(), workplaceEl.value);
-  });
+
+  function currentSlot(){
+    const v = workplaceEl.value;
+    if(v===settings.w1name) return 'w1';
+    if(v===settings.w2name) return 'w2';
+    return 'w1';
+  }
 
   function appendProcedureText(txt){
     const cur = (procedureEl.value || '').trim();
     procedureEl.value = cur ? (cur + (cur.endsWith(',')?' ':', ') + txt) : txt;
     procedureEl.dispatchEvent(new Event('input'));
   }
+
   function renderQuickProcedures(){
     quickWrap.innerHTML = '';
-    (settings.procedures||[]).forEach(name=>{
+    const slot = currentSlot();
+    const list = (settings.proceduresByPlace && Array.isArray(settings.proceduresByPlace[slot]))
+      ? settings.proceduresByPlace[slot] : [];
+    list.forEach(name=>{
       const b=document.createElement('button');
       b.type='button'; b.className='chip-btn'; b.textContent=name;
       b.addEventListener('click',()=>appendProcedureText(name));
       quickWrap.appendChild(b);
     });
-    if((settings.procedures||[]).length===0){
+    if(list.length===0){
       const s=document.createElement('span'); s.className='muted';
-      s.textContent='(A gyors beavatkozások itt fognak megjelenni. Add hozzá őket a Beállítások oldalon.)';
+      s.textContent='(Itt jelennek meg a gyors beavatkozások. Add hozzá őket a Beállításokban a kiválasztott helyhez.)';
       quickWrap.appendChild(s);
     }
   }
+
+  workplaceEl.addEventListener('change', ()=>{
+    setSelectBG(workplaceEl.value);
+    if(currentUID) localStorage.setItem(lastKey(), workplaceEl.value);
+    renderQuickProcedures();
+  });
 
   function showAuth(){ authCard.classList.remove('hide'); appContent.classList.add('hide'); }
   function showApp(){ authCard.classList.add('hide'); appContent.classList.remove('hide'); }
   function uiAuth(isLogged, user){
     document.getElementById('root').classList.remove('hide');
-    if(isLogged){ showApp(); dateEl.value=new Date().toISOString().slice(0,10); loadSettingsAndBindWorkplaces().finally(hideLoader); patientEl.focus(); }
-    else { showAuth(); hideLoader(); }
+    if(isLogged){
+      showApp();
+      dateEl.value=new Date().toISOString().slice(0,10);
+      loadSettingsAndBindWorkplaces().finally(hideLoader);
+      patientEl.focus();
+    } else { showAuth(); hideLoader(); }
   }
   const tryLogin = async (fn)=>{ authMsg.textContent=''; try{ await fn(); showLoader(); }catch(e){ authMsg.textContent=e?.message || 'Hiba'; } };
   loginBtn.onclick = ()=> tryLogin(()=>signInWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value));
@@ -230,7 +251,9 @@
     currentUID = user.uid;
     const sRef = doc(db,'users',currentUID,'meta','settings');
     const snap = await getDoc(sRef);
-    if(!snap.exists()) await setDoc(sRef, settings);
+    if(!snap.exists()){
+      await setDoc(sRef, settings);
+    }
     uiAuth(true, user);
   });
 
@@ -239,6 +262,11 @@
     const snap = await getDoc(sRef);
     if(snap.exists()){
       const s = snap.data();
+      const legacy = Array.isArray(s.procedures) ? s.procedures : [];
+      const pbp = s.proceduresByPlace && typeof s.proceduresByPlace==='object'
+        ? { w1: Array.isArray(s.proceduresByPlace.w1)? s.proceduresByPlace.w1 : [],
+            w2: Array.isArray(s.proceduresByPlace.w2)? s.proceduresByPlace.w2 : [] }
+        : { w1: legacy, w2: legacy };
       settings = {
         ...settings,
         w1name: s.w1name ?? settings.w1name,
@@ -247,7 +275,7 @@
         w2pct: s.w2pct ?? settings.w2pct,
         w1color: s.w1color ?? settings.w1color,
         w2color: s.w2color ?? settings.w2color,
-        procedures: Array.isArray(s.procedures)? s.procedures : []
+        proceduresByPlace: pbp
       };
     }
     bindWorkplaceOptions();
@@ -263,12 +291,12 @@
       workplaceEl.selectedIndex = idx>=0 ? idx : 0;
     }else workplaceEl.selectedIndex = 0;
     setSelectBG(workplaceEl.value);
+    renderQuickProcedures();
     patientEl.focus();
   }
   resetBtn.onclick = clearForm;
 
   async function nextMonthlySeq(uid, month){
-    // <-- JAVÍTOTT ÚTVONAL
     const counterRef = doc(db,'users',uid,'counters',month);
     const seq = await runTransaction(db, async (tx)=>{
       const snap = await tx.get(counterRef);
