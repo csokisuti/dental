@@ -339,7 +339,7 @@
   }
 
   function sortBySeq(list){
-    // seq növekvő, hiányzó seq a végére (createdAt / date szerint)
+    // seq növekvő, hiányzó seq a végére
     return list.slice().sort((a,b)=>{
       const sa = (typeof a.seq==='number') ? a.seq : Number.POSITIVE_INFINITY;
       const sb = (typeof b.seq==='number') ? b.seq : Number.POSITIVE_INFINITY;
@@ -414,7 +414,8 @@
   };
 
   async function nextMonthlySeq(uid, month){
-    const counterRef = doc(db,'users',uid,'meta','counters',month);
+    // JAVÍTOTT ÚTVONAL: users/<uid>/counters/<YYYY-MM>
+    const counterRef = doc(db,'users',uid,'counters',month);
     const seq = await runTransaction(db, async (tx)=>{
       const snap = await tx.get(counterRef);
       const cur = snap.exists() ? (snap.data().lastSeq||0) : 0;
