@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-<!-- iOS főképernyős "app" beállítások -->
 <link rel="apple-touch-icon" href="dent.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -13,49 +12,22 @@
 
 <title>Fogorvosi bevételkövető – Rögzítés</title>
 <style>
-  :root{
-    --bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;
-    --primary:#2563eb;--danger:#ef4444;--ok:#16a34a;--shadow:0 6px 25px rgba(15,23,42,.08)
-  }
+  :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--danger:#ef4444;--ok:#16a34a;--shadow:0 6px 25px rgba(15,23,42,.08)}
   *{box-sizing:border-box}
   html,body{height:100%}
   html{-webkit-text-size-adjust:100%}
-  body{
-    margin:0;background:var(--bg);color:var(--text);
-    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
-    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right)
-             env(safe-area-inset-bottom) env(safe-area-inset-left);
-  }
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;-webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
   .hide{display:none !important}
-
   .layout{max-width:700px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
   h1{font-size:20px;margin:0 0 8px}
   h2{font-size:16px;margin:0 0 10px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-
-  input,select{
-    width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;
-    font-size:16px;appearance:none;-webkit-appearance:none;
-  }
-  select{
-    background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),
-                      linear-gradient(135deg, #94a3b8 50%, transparent 50%),
-                      linear-gradient(to right, transparent, transparent);
-    background-position: calc(100% - 16px) 50%, calc(100% - 12px) 50%, 0 0;
-    background-size: 6px 6px, 6px 6px, 100% 100%;
-    background-repeat: no-repeat;
-    padding-right:36px;
-  }
-
+  input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:16px;appearance:none;-webkit-appearance:none}
+  select{background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),linear-gradient(135deg, #94a3b8 50%, transparent 50%),linear-gradient(to right, transparent, transparent);background-position: calc(100% - 16px) 50%, calc(100% - 12px) 50%, 0 0;background-size: 6px 6px, 6px 6px, 100% 100%;background-repeat: no-repeat;padding-right:36px}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .toolbar{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:12px;flex-wrap:wrap}
-  .btn{
-    display:inline-flex;align-items:center;gap:6px;padding:12px 14px;border:1px solid var(--line);
-    border-radius:10px;background:#fff;cursor:pointer;text-decoration:none;color:inherit;
-    font-size:16px;min-height:44px;touch-action:manipulation;
-  }
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;text-decoration:none;color:inherit;font-size:16px;min-height:44px;touch-action:manipulation}
   .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
   .btn.link{background:#fff}
   .btn:disabled{opacity:.6;cursor:not-allowed}
@@ -64,39 +36,20 @@
   .alert.err{background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
   .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
   .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-
-  /* Gyors beavatkozás kártyák */
   .quick-wrap{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px}
-  .chip-btn{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:8px 12px;border:1px solid var(--line);border-radius:999px;
-    background:#fff;cursor:pointer;font-weight:600;font-size:14px;min-height:36px;
-  }
+  .chip-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;font-weight:600;font-size:14px;min-height:36px}
   .chip-btn:hover{box-shadow:0 2px 10px rgba(15,23,42,.08)}
-
-  /* Loader overlay */
-  .loader{
-    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:var(--bg);z-index:9999;transition:opacity .25s ease;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right)
-             env(safe-area-inset-bottom) env(safe-area-inset-left);
-  }
+  .loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;transition:opacity .25s ease;padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
   .loader.hide{opacity:0;pointer-events:none}
   .loader-inner{display:flex;flex-direction:column;align-items:center;gap:12px}
   .tooth{width:64px;height:64px}
   .spin{animation:spin 1.1s linear infinite}
   @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   .loader-text{color:var(--muted);font-weight:600}
-
-  @media (max-width: 480px){
-    .row{grid-template-columns:1fr}
-    .layout{padding:16px}
-    .btn{width:100%}
-  }
+  @media (max-width: 480px){.row{grid-template-columns:1fr}.layout{padding:16px}.btn{width:100%}}
 </style>
 </head>
 <body>
-<!-- BETÖLTŐ KÉPERNYŐ -->
 <div id="loader" class="loader">
   <div class="loader-inner">
     <svg class="tooth spin" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Betöltés">
@@ -109,7 +62,6 @@
   </div>
 </div>
 
-<!-- GYÖKÉR LAYOUT -->
 <div class="layout hide" id="root">
   <div class="topbar">
     <h1>Fogorvosi bevételkövető – Rögzítés</h1>
@@ -120,7 +72,6 @@
     </div>
   </div>
 
-  <!-- Auth (kijelentkezve) -->
   <div class="card" id="authCard">
     <h2>Bejelentkezés</h2>
     <div class="row">
@@ -140,11 +91,8 @@
     <div class="muted" id="authMsg"></div>
   </div>
 
-  <!-- Rögzítő oldal (bejelentkezve) -->
   <div id="appContent" class="card hide">
-    <div class="topbar">
-      <h2>Új bejegyzés</h2>
-    </div>
+    <div class="topbar"><h2>Új bejegyzés</h2></div>
 
     <div id="saveOk" class="alert ok hide">Sikeresen mentve ✓</div>
     <div id="saveErr" class="alert err hide"></div>
@@ -163,7 +111,6 @@
     <div>
       <label>Beavatkozás</label>
       <input type="text" id="procedure" placeholder="Pl. tömés, gyökérkezelés…">
-      <!-- Gyors beavatkozások -->
       <div id="quickProcedures" class="quick-wrap"></div>
     </div>
 
@@ -188,7 +135,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, collection, addDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, doc, getDoc, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
@@ -204,7 +151,6 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // Elemszelektorok
   const root = document.getElementById('root');
   const loader = document.getElementById('loader');
   const authCard = document.getElementById('authCard');
@@ -229,19 +175,14 @@
   const saveErr = document.getElementById('saveErr');
 
   let currentUID = null;
-  let settings = {
-    w1name:'Hely1', w1pct:0.30, w1color:'#2563eb',
-    w2name:'Hely2', w2pct:0.40, w2color:'#16a34a',
-    procedures: []
-  };
+  let settings = { w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a', procedures: [] };
 
   const hideLoader = ()=> loader.classList.add('hide');
   const showLoader = ()=> loader.classList.remove('hide');
-
   const hexToRgb = (hex)=>{ const h=hex.replace('#',''); const b=parseInt(h.length===3?h.split('').map(x=>x+x).join(''):h,16); return {r:(b>>16)&255,g:(b>>8)&255,b:b&255}; };
   const contrast = (hex)=>{ const {r,g,b}=hexToRgb(hex||'#999'); const yiq=(r*299+g*587+b*114)/1000; return yiq>=128?'#000':'#fff'; };
-
   const lastKey = ()=> currentUID ? `dent_last_place_${currentUID}` : 'dent_last_place';
+  const monthKey = d => { const dt=new Date(d); return isNaN(dt)?'':dt.toISOString().slice(0,7); };
 
   function setSelectBG(placeName){
     const color = (placeName===settings.w1name) ? settings.w1color :
@@ -250,7 +191,6 @@
     workplaceEl.style.color = contrast(color);
     workplaceEl.style.borderColor = color;
   }
-
   function makeColoredOption(name, color){
     const opt = document.createElement('option');
     opt.textContent = `● ${name}`;
@@ -260,13 +200,11 @@
     opt.style.fontWeight = '600';
     return opt;
   }
-
   function bindWorkplaceOptions(){
     workplaceEl.innerHTML = '';
     [{name: settings.w1name, color: settings.w1color},
      {name: settings.w2name, color: settings.w2color}]
      .forEach(({name,color})=> workplaceEl.appendChild(makeColoredOption(name,color)));
-
     const last = localStorage.getItem(lastKey());
     if(last){
       const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===last);
@@ -276,7 +214,6 @@
     }
     setSelectBG(workplaceEl.value);
   }
-
   workplaceEl?.addEventListener('change', ()=>{
     setSelectBG(workplaceEl.value);
     if(currentUID) localStorage.setItem(lastKey(), workplaceEl.value);
@@ -291,7 +228,6 @@
     }
     procedureEl.dispatchEvent(new Event('input'));
   }
-
   function renderQuickProcedures(){
     quickWrap.innerHTML = '';
     (settings.procedures || []).forEach(name=>{
@@ -310,43 +246,26 @@
     }
   }
 
-  function showAuth(){
-    authCard.classList.remove('hide');
-    appContent.classList.add('hide');
-  }
-  function showApp(){
-    authCard.classList.add('hide');
-    appContent.classList.remove('hide');
-  }
-
+  function showAuth(){ authCard.classList.remove('hide'); appContent.classList.add('hide'); }
+  function showApp(){ authCard.classList.add('hide'); appContent.classList.remove('hide'); }
   function uiAuth(isLogged, user){
-    root.classList.remove('hide');
+    document.getElementById('root').classList.remove('hide');
     if(isLogged){
       showApp();
       dateEl.value = new Date().toISOString().slice(0,10);
       loadSettingsAndBindWorkplaces().finally(hideLoader);
       patientEl.focus();
     }else{
-      showAuth();
-      hideLoader();
+      showAuth(); hideLoader();
     }
   }
-
-  const tryLogin = async (fn) => {
-    authMsg.textContent = '';
-    try{ await fn(); showLoader(); } catch(e){ authMsg.textContent = e?.message || 'Hiba'; }
-  };
-
+  const tryLogin = async (fn) => { authMsg.textContent = ''; try{ await fn(); showLoader(); } catch(e){ authMsg.textContent = e?.message || 'Hiba'; } };
   loginBtn.onclick     = ()=> tryLogin(()=>signInWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value));
   registerBtn.onclick  = ()=> tryLogin(()=>createUserWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value));
   logoutBtn.onclick    = ()=>{ showLoader(); signOut(auth); };
 
   onAuthStateChanged(auth, async (user)=>{
-    if(!user){
-      currentUID = null;
-      uiAuth(false);
-      return;
-    }
+    if(!user){ currentUID = null; uiAuth(false); return; }
     currentUID = user.uid;
     const sRef = doc(db,'users',currentUID,'meta','settings');
     const snap = await getDoc(sRef);
@@ -374,7 +293,6 @@
   function clearForm(){
     patientEl.value=''; procedureEl.value=''; amountEl.value='';
     dateEl.value = new Date().toISOString().slice(0,10);
-
     const last = localStorage.getItem(lastKey());
     if(last){
       const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===last);
@@ -386,6 +304,18 @@
     patientEl.focus();
   }
   resetBtn.onclick = clearForm;
+
+  async function nextMonthlySeq(uid, month){
+    const counterRef = doc(db,'users',uid,'meta','counters',month);
+    const seq = await runTransaction(db, async (tx)=>{
+      const snap = await tx.get(counterRef);
+      const cur = snap.exists() ? (snap.data().lastSeq||0) : 0;
+      const next = cur + 1;
+      tx.set(counterRef, { lastSeq: next }, { merge:true });
+      return next;
+    });
+    return seq;
+  }
 
   saveBtn.onclick = async ()=>{
     saveOk.classList.add('hide');
@@ -409,9 +339,21 @@
       return;
     }
 
+    const mKey = monthKey(payload.date);
+    if(!mKey){
+      saveErr.textContent = 'Érvénytelen dátum.';
+      saveErr.classList.remove('hide');
+      return;
+    }
+
     saveBtn.disabled = true;
     try{
-      await addDoc(collection(db,'users',currentUID,'entries'), payload);
+      const seq = await nextMonthlySeq(currentUID, mKey);
+      await addDoc(collection(db,'users',currentUID,'entries'), {
+        ...payload,
+        monthKey: mKey,
+        seq: seq
+      });
       localStorage.setItem(lastKey(), payload.workplace);
       saveOk.classList.remove('hide');
       setTimeout(()=>saveOk.classList.add('hide'), 2000);
