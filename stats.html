@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<link rel="apple-touch-icon" href="dent.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Bevételkövető">
+<meta name="theme-color" content="#2563eb">
+
+<title>Statisztika – Fogorvosi bevételkövető</title>
+<style>
+  :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--danger:#ef4444;--shadow:0 6px 25px rgba(15,23,42,.08)}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  .layout{max-width:1100px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
+  h1{margin:0 0 6px;font-size:20px}
+  h2{margin:0 0 10px;font-size:16px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:16px;appearance:none;-webkit-appearance:none}
+  .row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;text-decoration:none;color:inherit;font-size:16px;min-height:44px;touch-action:manipulation}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .muted{color:var(--muted);font-size:12px}
+  .pill{display:inline-block;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-weight:700}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{font-size:12px;color:var(--muted);font-weight:600}
+  .right{text-align:right}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .hide{display:none !important}
+  .loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;transition:opacity .25s ease;padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  .loader.hide{opacity:0;pointer-events:none}
+  .loader-inner{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .tooth{width:64px;height:64px}
+  .mutedbox{font-size:12px;background:#f8fafc;border:1px solid var(--line);padding:8px;border-radius:8px}
+  @media (max-width: 900px){.row{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}
+  @media (max-width: 600px){.row{grid-template-columns:1fr}.btn{width:100%}}
+</style>
+<!-- Chart.js a vonaldiagramhoz -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="loader" class="loader">
+  <div class="loader-inner">
+    <svg class="tooth" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Betöltés">
+      <path d="M20 8c-6 0-10 5-10 12 0 9 5 14 9 17 4 3 5 15 9 15s5-9 9-9 5 9 9 9 5-12 9-15c4-3 9-8 9-17 0-7-4-12-10-12-5 0-9 2-12 5-3-3-7-5-12-5z" stroke="#2563eb" stroke-width="2" fill="#fff"/>
+      <circle cx="26" cy="24" r="2.5" fill="#0f172a"/>
+      <circle cx="38" cy="24" r="2.5" fill="#0f172a"/>
+      <path d="M24 33c2 3 6 5 8 5s6-2 8-5" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <div class="muted">Betöltés…</div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="topbar">
+    <h1>Statisztika</h1>
+    <div class="nav">
+      <a class="btn" href="index.html">Rögzítés</a>
+      <a class="btn" href="income.html">Bevételek</a>
+      <a class="btn" href="settings.html">Beállítások</a>
+      <button class="btn" id="logoutBtn">Kijelentkezés</button>
+    </div>
+  </div>
+
+  <div class="card" id="authCard">
+    <div class="row2">
+      <div>
+        <label>E-mail</label>
+        <input id="email" type="email" inputmode="email" autocomplete="username">
+      </div>
+      <div>
+        <label>Jelszó</label>
+        <input id="password" type="password" autocomplete="current-password">
+      </div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn primary" id="loginBtn">Belépés</button>
+      <button class="btn" id="registerBtn">Regisztráció</button>
+    </div>
+    <div class="muted" id="authMsg"></div>
+  </div>
+
+  <div class="card hide" id="filters">
+    <h2>Szűrők</h2>
+    <div class="row">
+      <div>
+        <label>Dátum – tól</label>
+        <input type="date" id="dateFrom">
+      </div>
+      <div>
+        <label>Dátum – ig</label>
+        <input type="date" id="dateTo">
+      </div>
+      <div>
+        <label>Munkahely</label>
+        <select id="filterWorkplace">
+          <option value="">Összesen</option>
+        </select>
+      </div>
+      <div>
+        <label>Metrika a görbén</label>
+        <select id="metricSelect">
+          <option value="gross">Bevétel</option>
+          <option value="own">Saját rész</option>
+        </select>
+      </div>
+    </div>
+    <div class="mutedbox" style="margin-top:8px">
+      Tipp: ha üresen hagyod a dátummezőket, az összes bejegyzés számít.
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card hide" id="kpisCard">
+      <h2>Csúcsteljesítmény</h2>
+      <div class="row2">
+        <div>
+          <label>Legjobb nap – Bevétel</label>
+          <div id="bestGross" class="pill">-</div>
+        </div>
+        <div>
+          <label>Legjobb nap – Saját rész</label>
+          <div id="bestOwn" class="pill">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hide" id="chartCard">
+      <h2>Havi forgalom</h2>
+      <canvas id="monthlyChart" height="120"></canvas>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card hide" id="patientsCard">
+      <h2>Havi páciensszám munkahelyenként</h2>
+      <div class="ktable">
+        <table>
+          <thead>
+            <tr><th>Hónap</th><th class="right">Hely1</th><th class="right">Hely2</th><th class="right">Összesen</th></tr>
+          </thead>
+          <tbody id="patientsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card hide" id="procCard">
+      <h2>Beavatkozás-statisztika (top 20)</h2>
+      <div class="ktable">
+        <table>
+          <thead>
+            <tr><th>Beavatkozás</th><th class="right">Darab</th><th class="right">Bevétel</th><th class="right">Saját rész</th></tr>
+          </thead>
+          <tbody id="procTbody"></tbody>
+        </table>
+      </div>
+      <div class="muted" style="margin-top:6px">Megjegyzés: több beavatkozásnál a beírt listát elemenként külön számolja (vesszőnként).</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
+    authDomain: "dental-38375.firebaseapp.com",
+    projectId: "dental-38375",
+    storageBucket: "dental-38375.appspot.com",
+    messagingSenderId: "245424156358",
+    appId: "1:245424156358:web:e6426588b20675756331c7",
+    measurementId: "G-WC90WMHRZT"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const loader = document.getElementById('loader');
+  const showLoader = ()=> loader.classList.remove('hide');
+  const hideLoader = ()=> loader.classList.add('hide');
+
+  const authCard = document.getElementById('authCard');
+  const filters = document.getElementById('filters');
+  const kpisCard = document.getElementById('kpisCard');
+  const chartCard = document.getElementById('chartCard');
+  const patientsCard = document.getElementById('patientsCard');
+  const procCard = document.getElementById('procCard');
+
+  const loginBtn = document.getElementById('loginBtn');
+  const registerBtn = document.getElementById('registerBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const emailEl = document.getElementById('email');
+  const passEl = document.getElementById('password');
+  const authMsg = document.getElementById('authMsg');
+
+  const dateFromEl = document.getElementById('dateFrom');
+  const dateToEl = document.getElementById('dateTo');
+  const filterWorkplace = document.getElementById('filterWorkplace');
+  const metricSelect = document.getElementById('metricSelect');
+
+  const bestGrossEl = document.getElementById('bestGross');
+  const bestOwnEl = document.getElementById('bestOwn');
+  const patientsTbody = document.getElementById('patientsTbody');
+  const procTbody = document.getElementById('procTbody');
+
+  let uid = null;
+  let entries = [];
+  let settings = { w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a' };
+  const fmt = n => (n||0).toLocaleString('hu-HU',{maximumFractionDigits:0});
+  const monthKey = d => { const dt=new Date(d); return isNaN(dt)?'':dt.toISOString().slice(0,7); };
+  const hexToRgb = (hex)=>{ const h=hex.replace('#',''); const b=parseInt(h.length===3?h.split('').map(x=>x+x).join(''):h,16); return {r:(b>>16)&255,g:(b>>8)&255,b:b&255}; };
+  const contrast = (hex)=>{ const {r,g,b}=hexToRgb(hex||'#999'); const yiq=(r*299+g*587+b*114)/1000; return yiq>=128?'#000':'#fff'; };
+
+  function pctFor(place){ if(place===settings.w1name) return +settings.w1pct||0; if(place===settings.w2name) return +settings.w2pct||0; return 0; }
+  function splitProcedures(text){
+    const items = (text||'')
+      .split(',')
+      .map(s=>s.trim())
+      .filter(Boolean);
+    // case-insensitive unique, de az első látott eredeti formát megőrizzük
+    const seen = new Set(), out=[];
+    for(const it of items){
+      const k = it.toLocaleLowerCase('hu-HU');
+      if(!seen.has(k)){ seen.add(k); out.push(it); }
+    }
+    return out;
+  }
+
+  function bindWorkplaceSelect(select){
+    select.innerHTML = '';
+    const all=document.createElement('option'); all.value=''; all.textContent='Összesen'; select.appendChild(all);
+    [settings.w1name, settings.w2name].forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; select.appendChild(o); });
+    select.selectedIndex = 0;
+  }
+
+  onAuthStateChanged(auth, async user=>{
+    if(!user){
+      authCard.classList.remove('hide');
+      [filters,kpisCard,chartCard,patientsCard,procCard].forEach(el=>el.classList.add('hide'));
+      hideLoader();
+      uid=null; return;
+    }
+    uid = user.uid;
+    authCard.classList.add('hide');
+    [filters,kpisCard,chartCard,patientsCard,procCard].forEach(el=>el.classList.remove('hide'));
+
+    // Settings betöltése
+    const sRef = doc(db,'users',uid,'meta','settings');
+    const snap = await getDoc(sRef);
+    if(!snap.exists()){
+      await setDoc(sRef, settings);
+    } else {
+      settings = { ...settings, ...snap.data() };
+    }
+    bindWorkplaceSelect(filterWorkplace);
+
+    // alapértelmezett intervallum: üres (minden), de ha szeretnéd: aktuális év jan 1 – ma
+    // const now=new Date(); dateFromEl.value = `${now.getFullYear()}-01-01`; dateToEl.value = now.toISOString().slice(0,10);
+
+    // bejegyzések figyelése
+    const qRef = query(collection(db,'users',uid,'entries'), orderBy('date','asc'));
+    onSnapshot(qRef, s=>{
+      const arr=[]; s.forEach(d=>arr.push({id:d.id, ...d.data()}));
+      entries = arr;
+      renderAll();
+      hideLoader();
+    });
+  });
+
+  loginBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await signInWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); showLoader(); }catch(e){ authMsg.textContent=e.message; } };
+  registerBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await createUserWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); showLoader(); }catch(e){ authMsg.textContent=e.message; } };
+  logoutBtn.onclick = ()=>{ showLoader(); signOut(auth); };
+
+  [dateFromEl,dateToEl,filterWorkplace,metricSelect].forEach(el=>{
+    el.addEventListener('input', renderAll);
+    el.addEventListener('change', renderAll);
+  });
+
+  function filtered(){
+    const w = filterWorkplace.value;
+    const df = dateFromEl.value ? new Date(dateFromEl.value).getTime() : null;
+    const dt = dateToEl.value ? new Date(dateToEl.value).getTime() : null;
+    return entries.filter(e=>{
+      const okW = w ? e.workplace===w : true;
+      const t = new Date(e.date||'1970-01-01').getTime();
+      const okFrom = df!=null ? t>=df : true;
+      const okTo = dt!=null ? t<=dt : true;
+      return okW && okFrom && okTo;
+    });
+  }
+
+  // ----- KPI-k (legjobb napok) -----
+  function renderKpis(list){
+    // napi összesítés
+    const byDay = new Map(); // dateStr -> {gross, own}
+    for(const e of list){
+      if(!e.date) continue;
+      const pct = (e.pctAtSave!=null) ? e.pctAtSave : pctFor(e.workplace);
+      const own = (e.ownAtSave!=null) ? e.ownAtSave : Math.round((+e.amount||0)*pct);
+      const g = +e.amount||0;
+      const rec = byDay.get(e.date) || {gross:0, own:0};
+      rec.gross += g; rec.own += own;
+      byDay.set(e.date, rec);
+    }
+    if(byDay.size===0){
+      bestGrossEl.textContent='-';
+      bestOwnEl.textContent='-';
+      return;
+    }
+    let bestG = null, bestO = null;
+    for(const [d, agg] of byDay){
+      if(!bestG || agg.gross > bestG.agg.gross) bestG = {d, agg};
+      if(!bestO || agg.own   > bestO.agg.own)   bestO = {d, agg};
+    }
+    bestGrossEl.textContent = `${bestG.d} · ${fmt(bestG.agg.gross)} Ft`;
+    bestOwnEl.textContent   = `${bestO.d} · ${fmt(bestO.agg.own)} Ft`;
+  }
+
+  // ----- Havi görbe -----
+  let chart;
+  function renderChart(list){
+    const metric = metricSelect.value; // 'gross' | 'own'
+    const m = new Map(); // YYYY-MM -> sum
+    for(const e of list){
+      const mk = monthKey(e.date);
+      if(!mk) continue;
+      const pct = (e.pctAtSave!=null) ? e.pctAtSave : pctFor(e.workplace);
+      const own = (e.ownAtSave!=null) ? e.ownAtSave : Math.round((+e.amount||0)*pct);
+      const val = (metric==='own') ? own : (+e.amount||0);
+      m.set(mk, (m.get(mk)||0) + val);
+    }
+    const labels = Array.from(m.keys()).sort();
+    const data = labels.map(l=> m.get(l)||0);
+
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    if(chart){ chart.destroy(); }
+    chart = new Chart(ctx, {
+      type:'line',
+      data:{ labels, datasets:[{ label: (metric==='own'?'Saját rész':'Bevétel'), data, tension:.2 }]},
+      options:{
+        responsive:true,
+        plugins:{ legend:{ display:true }},
+        scales:{ y:{ ticks:{ callback:v=> (v).toLocaleString('hu-HU')+' Ft' } } }
+      }
+    });
+  }
+
+  // ----- Havi páciensszám munkahelyenként -----
+  function renderPatientsTable(allEntries){
+    const counts = new Map(); // month -> {w1,w2,total}
+    for(const e of allEntries){
+      const mk = monthKey(e.date); if(!mk) continue;
+      const rec = counts.get(mk) || {w1:0,w2:0,total:0};
+      if(e.workplace===settings.w1name) rec.w1++;
+      else if(e.workplace===settings.w2name) rec.w2++;
+      else rec.total++; // ha nincs egyezés, az összesbe számoljuk
+      rec.total++;
+      counts.set(mk, rec);
+    }
+    const months = Array.from(counts.keys()).sort();
+    patientsTbody.innerHTML = '';
+    for(const mk of months){
+      const r = counts.get(mk);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${mk}</td><td class="right">${r.w1}</td><td class="right">${r.w2}</td><td class="right">${r.total}</td>`;
+      patientsTbody.appendChild(tr);
+    }
+  }
+
+  // ----- Beavatkozás statisztika (top 20 elem, elemenként) -----
+  function renderProcedureStats(allEntries){
+    // map key: lc name, value: {display:string, count:number, gross:number, own:number}
+    const agg = new Map();
+    for(const e of allEntries){
+      const parts = splitProcedures(e.procedure||'');
+      const pct = (e.pctAtSave!=null) ? e.pctAtSave : pctFor(e.workplace);
+      const own = (e.ownAtSave!=null) ? e.ownAtSave : Math.round((+e.amount||0)*pct);
+      // bevételt és saját részt "elosztani" is lehetne a tételek között, de általában
+      // egy bejegyzés 1 dolog — egyszerűbb: teljes összeget mindegyik elemnek NEM adjuk,
+      // inkább egyenlően szétosztjuk a beírt elemek között.
+      const n = Math.max(1, parts.length);
+      const shareGross = Math.round((+e.amount||0) / n);
+      const shareOwn   = Math.round((own||0) / n);
+
+      for(const p of parts){
+        const key = p.toLocaleLowerCase('hu-HU');
+        const rec = agg.get(key) || {display:p, count:0, gross:0, own:0};
+        if(rec.count===0) rec.display = p; // első látott formát őrizzük
+        rec.count += 1;
+        rec.gross += shareGross;
+        rec.own   += shareOwn;
+        agg.set(key, rec);
+      }
+    }
+    const rows = Array.from(agg.values())
+      .sort((a,b)=> b.count-a.count || b.gross-a.gross)
+      .slice(0,20);
+
+    procTbody.innerHTML = '';
+    for(const r of rows){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.display}</td><td class="right">${r.count}</td><td class="right">${fmt(r.gross)} Ft</td><td class="right">${fmt(r.own)} Ft</td>`;
+      procTbody.appendChild(tr);
+    }
+  }
+
+  function renderAll(){
+    const list = filtered();
+    // kártyák mutatása, ha van adat
+    const any = list.length>0;
+    [kpisCard,chartCard,patientsCard,procCard].forEach(el=> el.classList.toggle('hide', !any));
+
+    // KPI-k, chart, táblák
+    renderKpis(list);
+    renderChart(list);
+    renderPatientsTable(list);
+    renderProcedureStats(list);
+
+    // Munkahely pill stílus a KPI-hoz (nem szükséges, de adhatnánk külön)
+  }
+</script>
+</body>
+</html>
