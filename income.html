@@ -112,6 +112,16 @@
         <input id="filterPatient" placeholder="Keresés névre">
       </div>
     </div>
+
+    <!-- MIGRÁLÁS SZEKCIÓ -->
+    <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <strong>Migrálás (havi sorszámozás):</strong>
+      <label style="display:inline-flex;gap:8px;align-items:center;font-size:14px">
+        <input type="checkbox" id="migrateOnlyMissing" checked> Csak ahol hiányzik a sorszám
+      </label>
+      <button class="btn" id="migrateBtn">Havi sorszámozás lefuttatása</button>
+      <span class="muted" id="migrateMsg"></span>
+    </div>
   </div>
 
   <div class="card hide" id="editor">
@@ -219,6 +229,10 @@
   const filterMonth = document.getElementById('filterMonth');
   const filterWorkplace = document.getElementById('filterWorkplace');
   const filterPatient = document.getElementById('filterPatient');
+
+  const migrateBtn = document.getElementById('migrateBtn');
+  const migrateOnlyMissing = document.getElementById('migrateOnlyMissing');
+  const migrateMsg = document.getElementById('migrateMsg');
 
   const tableBody = document.querySelector('#entriesTable tbody');
   const sumGrossEl = document.getElementById('sumGross');
@@ -425,6 +439,77 @@
     });
     return seq;
   }
+
+  // MIGRÁLÁS: adott hónap sorszámainak beállítása
+  async function migrateMonthSeq(month, onlyMissing=true){
+    if(!uid) throw new Error('Nincs bejelentkezett felhasználó.');
+    if(!month) throw new Error('Válassz hónapot a Szűrők között.');
+
+    // Az aktuális entries tömbből dolgozunk (real-time snapshot alapján)
+    const monthEntries = entries
+      .filter(e => (e.monthKey ? e.monthKey===month : monthKey(e.date)===month))
+      // rendezés: dátum növekvő, majd createdAt (ha van), majd id
+      .sort((a,b)=>{
+        const ad = new Date(a.date||'1970-01-01').getTime();
+        const bd = new Date(b.date||'1970-01-01').getTime();
+        if(ad!==bd) return ad-bd;
+        const ac = a.createdAt || 0, bc = b.createdAt || 0;
+        if(ac!==bc) return ac-bc;
+        return (a.id||'').localeCompare(b.id||'');
+      });
+
+    let seq = 0;
+    const ops = [];
+
+    for(const e of monthEntries){
+      if(onlyMissing && typeof e.seq === 'number') continue;
+      seq += 1;
+      const patch = { seq, monthKey: month };
+      // biztos ami biztos: saját számítások frissítése, ha nem volt mentve
+      const pct = (e.pctAtSave != null) ? e.pctAtSave : pctFor(e.workplace);
+      const own = (e.ownAtSave != null) ? e.ownAtSave : Math.round((+e.amount||0) * pct);
+      if(e.pctAtSave == null) patch.pctAtSave = pct;
+      if(e.ownAtSave == null) patch.ownAtSave = own;
+
+      ops.push(updateDoc(doc(db,'users',uid,'entries',e.id), patch).catch(()=>{}));
+    }
+
+    // Ha onlyMissing és mindennek volt seq, akkor is frissítsük a számlálót a max meglévőre
+    if(onlyMissing && seq===0){
+      // keresd meg a hónapban a legnagyobb meglévő seq-et
+      const maxExisting = monthEntries.reduce((m,e)=> (typeof e.seq==='number' && e.seq>m)?e.seq:m, 0);
+      seq = maxExisting;
+    }
+
+    if(ops.length) await Promise.all(ops);
+
+    // számláló frissítése a hónap végső max értékére
+    const counterRef = doc(db,'users',uid,'counters',month);
+    await runTransaction(db, async (tx)=>{
+      const snap = await tx.get(counterRef);
+      const cur = snap.exists() ? (snap.data().lastSeq||0) : 0;
+      const target = Math.max(cur, seq);
+      tx.set(counterRef, { lastSeq: target }, { merge:true });
+    });
+
+    return { processed: ops.length, finalSeq: seq };
+  }
+
+  migrateBtn?.addEventListener('click', async ()=>{
+    migrateMsg.textContent = '';
+    try{
+      const m = filterMonth.value;
+      if(!m){ migrateMsg.textContent = 'Válassz hónapot a migráláshoz.'; return; }
+      showLoader();
+      const onlyMissing = !!migrateOnlyMissing.checked;
+      const res = await migrateMonthSeq(m, onlyMissing);
+      migrateMsg.textContent = `Kész. Módosított bejegyzések: ${res.processed}. Utolsó sorszám: ${res.finalSeq}.`;
+    }catch(err){
+      migrateMsg.textContent = err?.message || 'Migrálási hiba történt.';
+    }finally{
+      hideLoader();
+    }
+  });
 
   saveEdit.onclick = async ()=>{
     if(!editingId) return;
