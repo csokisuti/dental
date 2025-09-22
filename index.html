@@ -3,20 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-
 <link rel="apple-touch-icon" href="dent.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Bevételkövető">
 <meta name="theme-color" content="#2563eb">
-
 <title>Fogorvosi bevételkövető – Rögzítés</title>
 <style>
   :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--danger:#ef4444;--ok:#16a34a;--shadow:0 6px 25px rgba(15,23,42,.08)}
   *{box-sizing:border-box}
   html,body{height:100%}
   html{-webkit-text-size-adjust:100%}
-  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;-webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
   .hide{display:none !important}
   .layout{max-width:700px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
@@ -24,7 +22,7 @@
   h2{font-size:16px;margin:0 0 10px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
   input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:16px;appearance:none;-webkit-appearance:none}
-  select{background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),linear-gradient(135deg, #94a3b8 50%, transparent 50%),linear-gradient(to right, transparent, transparent);background-position: calc(100% - 16px) 50%, calc(100% - 12px) 50%, 0 0;background-size: 6px 6px, 6px 6px, 100% 100%;background-repeat: no-repeat;padding-right:36px}
+  select{background-image:linear-gradient(45deg,transparent 50%,#94a3b8 50%),linear-gradient(135deg,#94a3b8 50%,transparent 50%),linear-gradient(to right,transparent,transparent);background-position:calc(100% - 16px) 50%,calc(100% - 12px) 50%,0 0;background-size:6px 6px,6px 6px,100% 100%;background-repeat:no-repeat;padding-right:36px}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .toolbar{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:12px;flex-wrap:wrap}
   .btn{display:inline-flex;align-items:center;gap:6px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;text-decoration:none;color:inherit;font-size:16px;min-height:44px;touch-action:manipulation}
@@ -39,14 +37,14 @@
   .quick-wrap{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px}
   .chip-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;font-weight:600;font-size:14px;min-height:36px}
   .chip-btn:hover{box-shadow:0 2px 10px rgba(15,23,42,.08)}
-  .loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;transition:opacity .25s ease;padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  .loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;transition:opacity .25s ease;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
   .loader.hide{opacity:0;pointer-events:none}
   .loader-inner{display:flex;flex-direction:column;align-items:center;gap:12px}
   .tooth{width:64px;height:64px}
   .spin{animation:spin 1.1s linear infinite}
   @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   .loader-text{color:var(--muted);font-weight:600}
-  @media (max-width: 480px){.row{grid-template-columns:1fr}.layout{padding:16px}.btn{width:100%}}
+  @media (max-width:480px){.row{grid-template-columns:1fr}.layout{padding:16px}.btn{width:100%}}
 </style>
 </head>
 <body>
@@ -56,7 +54,7 @@
       <path d="M20 8c-6 0-10 5-10 12 0 9 5 14 9 17 4 3 5 15 9 15s5-9 9-9 5 9 9 9 5-12 9-15c4-3 9-8 9-17 0-7-4-12-10-12-5 0-9 2-12 5-3-3-7-5-12-5z" stroke="#2563eb" stroke-width="2" fill="#fff"/>
       <circle cx="26" cy="24" r="2.5" fill="#0f172a"/>
       <circle cx="38" cy="24" r="2.5" fill="#0f172a"/>
-      <path d="M24 33c2 3 6 5 8 5s6-2 8-5" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />
+      <path d="M24 33c2 3 6 5 8 5s6-2 8-5" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
     </svg>
     <div class="loader-text">Betöltés…</div>
   </div>
@@ -75,14 +73,8 @@
   <div class="card" id="authCard">
     <h2>Bejelentkezés</h2>
     <div class="row">
-      <div>
-        <label>E-mail</label>
-        <input type="email" id="email" inputmode="email" autocomplete="username">
-      </div>
-      <div>
-        <label>Jelszó</label>
-        <input type="password" id="password" autocomplete="current-password">
-      </div>
+      <div><label>E-mail</label><input type="email" id="email" inputmode="email" autocomplete="username"></div>
+      <div><label>Jelszó</label><input type="password" id="password" autocomplete="current-password"></div>
     </div>
     <div class="toolbar">
       <button class="btn primary" id="loginBtn">Belépés</button>
@@ -98,14 +90,8 @@
     <div id="saveErr" class="alert err hide"></div>
 
     <div class="row">
-      <div>
-        <label>Dátum</label>
-        <input type="date" id="date">
-      </div>
-      <div>
-        <label>Páciens neve</label>
-        <input type="text" id="patient" placeholder="Pl. Kiss Anna" autocomplete="name">
-      </div>
+      <div><label>Dátum</label><input type="date" id="date"></div>
+      <div><label>Páciens neve</label><input type="text" id="patient" placeholder="Pl. Kiss Anna" autocomplete="name"></div>
     </div>
 
     <div>
@@ -115,14 +101,8 @@
     </div>
 
     <div class="row">
-      <div>
-        <label>Fizetett összeg (HUF)</label>
-        <input type="number" id="amount" min="0" step="1" inputmode="numeric" placeholder="pl. 25000">
-      </div>
-      <div>
-        <label>Munkahely</label>
-        <select id="workplace"></select>
-      </div>
+      <div><label>Fizetett összeg (HUF)</label><input type="number" id="amount" min="0" step="1" inputmode="numeric" placeholder="pl. 25000"></div>
+      <div><label>Munkahely</label><select id="workplace"></select></div>
     </div>
 
     <div class="toolbar">
@@ -138,13 +118,13 @@
   import { getFirestore, collection, addDoc, doc, getDoc, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
-    authDomain: "dental-38375.firebaseapp.com",
-    projectId: "dental-38375",
-    storageBucket: "dental-38375.appspot.com",
-    messagingSenderId: "245424156358",
-    appId: "1:245424156358:web:e6426588b20675756331c7",
-    measurementId: "G-WC90WMHRZT"
+    apiKey:"AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
+    authDomain:"dental-38375.firebaseapp.com",
+    projectId:"dental-38375",
+    storageBucket:"dental-38375.appspot.com",
+    messagingSenderId:"245424156358",
+    appId:"1:245424156358:web:e6426588b20675756331c7",
+    measurementId:"G-WC90WMHRZT"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -175,7 +155,7 @@
   const saveErr = document.getElementById('saveErr');
 
   let currentUID = null;
-  let settings = { w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a', procedures: [] };
+  let settings = { w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a', procedures:[] };
 
   const hideLoader = ()=> loader.classList.add('hide');
   const showLoader = ()=> loader.classList.remove('hide');
@@ -193,56 +173,43 @@
   }
   function makeColoredOption(name, color){
     const opt = document.createElement('option');
-    opt.textContent = `● ${name}`;
-    opt.value = name;
-    opt.style.background = color;
-    opt.style.color = contrast(color);
-    opt.style.fontWeight = '600';
+    opt.textContent = `● ${name}`; opt.value = name;
+    opt.style.background = color; opt.style.color = contrast(color); opt.style.fontWeight='600';
     return opt;
   }
   function bindWorkplaceOptions(){
     workplaceEl.innerHTML = '';
-    [{name: settings.w1name, color: settings.w1color},
-     {name: settings.w2name, color: settings.w2color}]
-     .forEach(({name,color})=> workplaceEl.appendChild(makeColoredOption(name,color)));
+    [{name:settings.w1name,color:settings.w1color},{name:settings.w2name,color:settings.w2color}]
+      .forEach(({name,color})=> workplaceEl.appendChild(makeColoredOption(name,color)));
     const last = localStorage.getItem(lastKey());
     if(last){
       const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===last);
       workplaceEl.selectedIndex = idx>=0 ? idx : 0;
-    }else{
-      workplaceEl.selectedIndex = 0;
-    }
+    }else workplaceEl.selectedIndex = 0;
     setSelectBG(workplaceEl.value);
   }
-  workplaceEl?.addEventListener('change', ()=>{
+  workplaceEl.addEventListener('change', ()=>{
     setSelectBG(workplaceEl.value);
     if(currentUID) localStorage.setItem(lastKey(), workplaceEl.value);
   });
 
   function appendProcedureText(txt){
     const cur = (procedureEl.value || '').trim();
-    if(!cur) procedureEl.value = txt;
-    else {
-      const sep = cur.endsWith(',') ? ' ' : ', ';
-      procedureEl.value = cur + sep + txt;
-    }
+    procedureEl.value = cur ? (cur + (cur.endsWith(',')?' ':', ') + txt) : txt;
     procedureEl.dispatchEvent(new Event('input'));
   }
   function renderQuickProcedures(){
     quickWrap.innerHTML = '';
-    (settings.procedures || []).forEach(name=>{
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'chip-btn';
-      b.textContent = name;
-      b.addEventListener('click', ()=> appendProcedureText(name));
+    (settings.procedures||[]).forEach(name=>{
+      const b=document.createElement('button');
+      b.type='button'; b.className='chip-btn'; b.textContent=name;
+      b.addEventListener('click',()=>appendProcedureText(name));
       quickWrap.appendChild(b);
     });
     if((settings.procedures||[]).length===0){
-      const span = document.createElement('span');
-      span.className='muted';
-      span.textContent='(A gyors beavatkozások itt fognak megjelenni. Add hozzá őket a Beállítások oldalon.)';
-      quickWrap.appendChild(span);
+      const s=document.createElement('span'); s.className='muted';
+      s.textContent='(A gyors beavatkozások itt fognak megjelenni. Add hozzá őket a Beállítások oldalon.)';
+      quickWrap.appendChild(s);
     }
   }
 
@@ -250,26 +217,20 @@
   function showApp(){ authCard.classList.add('hide'); appContent.classList.remove('hide'); }
   function uiAuth(isLogged, user){
     document.getElementById('root').classList.remove('hide');
-    if(isLogged){
-      showApp();
-      dateEl.value = new Date().toISOString().slice(0,10);
-      loadSettingsAndBindWorkplaces().finally(hideLoader);
-      patientEl.focus();
-    }else{
-      showAuth(); hideLoader();
-    }
+    if(isLogged){ showApp(); dateEl.value=new Date().toISOString().slice(0,10); loadSettingsAndBindWorkplaces().finally(hideLoader); patientEl.focus(); }
+    else { showAuth(); hideLoader(); }
   }
-  const tryLogin = async (fn) => { authMsg.textContent = ''; try{ await fn(); showLoader(); } catch(e){ authMsg.textContent = e?.message || 'Hiba'; } };
-  loginBtn.onclick     = ()=> tryLogin(()=>signInWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value));
-  registerBtn.onclick  = ()=> tryLogin(()=>createUserWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value));
-  logoutBtn.onclick    = ()=>{ showLoader(); signOut(auth); };
+  const tryLogin = async (fn)=>{ authMsg.textContent=''; try{ await fn(); showLoader(); }catch(e){ authMsg.textContent=e?.message || 'Hiba'; } };
+  loginBtn.onclick = ()=> tryLogin(()=>signInWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value));
+  registerBtn.onclick = ()=> tryLogin(()=>createUserWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value));
+  logoutBtn.onclick = ()=>{ showLoader(); signOut(auth); };
 
   onAuthStateChanged(auth, async (user)=>{
-    if(!user){ currentUID = null; uiAuth(false); return; }
+    if(!user){ currentUID=null; uiAuth(false); return; }
     currentUID = user.uid;
     const sRef = doc(db,'users',currentUID,'meta','settings');
     const snap = await getDoc(sRef);
-    if(!snap.exists()){ await setDoc(sRef, settings); }
+    if(!snap.exists()) await setDoc(sRef, settings);
     uiAuth(true, user);
   });
 
@@ -278,13 +239,16 @@
     const snap = await getDoc(sRef);
     if(snap.exists()){
       const s = snap.data();
-      settings.w1name  = s.w1name  ?? settings.w1name;
-      settings.w2name  = s.w2name  ?? settings.w2name;
-      settings.w1pct   = s.w1pct   ?? settings.w1pct;
-      settings.w2pct   = s.w2pct   ?? settings.w2pct;
-      settings.w1color = s.w1color ?? settings.w1color;
-      settings.w2color = s.w2color ?? settings.w2color;
-      settings.procedures = Array.isArray(s.procedures) ? s.procedures : [];
+      settings = {
+        ...settings,
+        w1name: s.w1name ?? settings.w1name,
+        w2name: s.w2name ?? settings.w2name,
+        w1pct: s.w1pct ?? settings.w1pct,
+        w2pct: s.w2pct ?? settings.w2pct,
+        w1color: s.w1color ?? settings.w1color,
+        w2color: s.w2color ?? settings.w2color,
+        procedures: Array.isArray(s.procedures)? s.procedures : []
+      };
     }
     bindWorkplaceOptions();
     renderQuickProcedures();
@@ -297,19 +261,18 @@
     if(last){
       const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===last);
       workplaceEl.selectedIndex = idx>=0 ? idx : 0;
-    }else{
-      workplaceEl.selectedIndex = 0;
-    }
+    }else workplaceEl.selectedIndex = 0;
     setSelectBG(workplaceEl.value);
     patientEl.focus();
   }
   resetBtn.onclick = clearForm;
 
   async function nextMonthlySeq(uid, month){
-    const counterRef = doc(db,'users',uid,'meta','counters',month);
+    // <-- JAVÍTOTT ÚTVONAL
+    const counterRef = doc(db,'users',uid,'counters',month);
     const seq = await runTransaction(db, async (tx)=>{
       const snap = await tx.get(counterRef);
-      const cur = snap.exists() ? (snap.data().lastSeq||0) : 0;
+      const cur = snap.exists()? (snap.data().lastSeq||0) : 0;
       const next = cur + 1;
       tx.set(counterRef, { lastSeq: next }, { merge:true });
       return next;
@@ -318,10 +281,7 @@
   }
 
   saveBtn.onclick = async ()=>{
-    saveOk.classList.add('hide');
-    saveErr.classList.add('hide');
-    saveErr.textContent = '';
-
+    saveOk.classList.add('hide'); saveErr.classList.add('hide'); saveErr.textContent = '';
     const payload = {
       date: dateEl.value,
       patient: (patientEl.value||'').trim(),
@@ -332,38 +292,22 @@
       ownAtSave: null,
       createdAt: Date.now()
     };
-
     if(!payload.date || !payload.patient || !payload.procedure || !payload.amount || !payload.workplace){
-      saveErr.textContent = 'Dátum, páciens, beavatkozás, összeg és munkahely kötelező.';
-      saveErr.classList.remove('hide');
-      return;
+      saveErr.textContent = 'Dátum, páciens, beavatkozás, összeg és munkahely kötelező.'; saveErr.classList.remove('hide'); return;
     }
-
     const mKey = monthKey(payload.date);
-    if(!mKey){
-      saveErr.textContent = 'Érvénytelen dátum.';
-      saveErr.classList.remove('hide');
-      return;
-    }
+    if(!mKey){ saveErr.textContent='Érvénytelen dátum.'; saveErr.classList.remove('hide'); return; }
 
     saveBtn.disabled = true;
     try{
       const seq = await nextMonthlySeq(currentUID, mKey);
-      await addDoc(collection(db,'users',currentUID,'entries'), {
-        ...payload,
-        monthKey: mKey,
-        seq: seq
-      });
+      await addDoc(collection(db,'users',currentUID,'entries'), { ...payload, monthKey: mKey, seq });
       localStorage.setItem(lastKey(), payload.workplace);
-      saveOk.classList.remove('hide');
-      setTimeout(()=>saveOk.classList.add('hide'), 2000);
+      saveOk.classList.remove('hide'); setTimeout(()=>saveOk.classList.add('hide'), 2000);
       clearForm();
     }catch(err){
-      saveErr.textContent = err?.message || 'Mentési hiba.';
-      saveErr.classList.remove('hide');
-    }finally{
-      saveBtn.disabled = false;
-    }
+      saveErr.textContent = err?.message || 'Mentési hiba.'; saveErr.classList.remove('hide');
+    }finally{ saveBtn.disabled = false; }
   };
 </script>
 </body>
