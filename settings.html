@@ -71,6 +71,17 @@
   .chip .mv{display:inline-flex;gap:4px}
   .chip .mv button{padding:2px 8px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:12px}
 
+  /* Hely-választó (Hely1 / Hely2) */
+  .place-switch{
+    display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  }
+  .place-switch button{
+    padding:8px 12px;border:0;background:#fff;cursor:pointer;font-weight:700
+  }
+  .place-switch button.active{
+    background:var(--primary);color:#fff
+  }
+
   /* Loader */
   .loader{
     position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
@@ -88,6 +99,8 @@
     .row{grid-template-columns:1fr}
     .row3{grid-template-columns:1fr}
     .btn{width:100%}
+    .place-switch{width:100%}
+    .place-switch button{flex:1}
   }
 </style>
 </head>
@@ -176,6 +189,15 @@
     <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
 
     <h2>Gyors beavatkozások</h2>
+
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <div class="place-switch" id="placeSwitch">
+        <button type="button" id="tabW1" class="active">Hely1</button>
+        <button type="button" id="tabW2">Hely2</button>
+      </div>
+      <span class="muted">Munkahelyenként külön listát állíthatsz be.</span>
+    </div>
+
     <div class="row">
       <div>
         <label>Megnevezés</label>
@@ -187,7 +209,9 @@
         <button class="btn" id="procCancelEditBtn" style="display:none">Mégse</button>
       </div>
     </div>
-    <div class="muted" style="margin-top:6px">Tipp: vesszővel elválasztva több elemet is hozzáadhatsz egyszerre. Fogd-és-vidd módszerrel vagy a ◀︎/▶︎ nyilakkal módosíthatod a sorrendet.</div>
+    <div class="muted" style="margin-top:6px">
+      Tipp: vesszővel elválasztva több elemet is hozzáadhatsz egyszerre. Fogd-és-vidd módszerrel vagy a ◀︎/▶︎ nyilakkal módosíthatod a sorrendet.
+    </div>
     <div id="procList" class="chip-list"></div>
 
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap">
@@ -205,7 +229,7 @@
     apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
     authDomain: "dental-38375.firebaseapp.com",
     projectId: "dental-38375",
-    storageBucket: "dental-38375.firebasestorage.app",
+    storageBucket: "dental-38375.appspot.com",
     messagingSenderId: "245424156358",
     appId: "1:245424156358:web:e6426588b20675756331c7",
     measurementId: "G-WC90WMHRZT"
@@ -246,18 +270,41 @@
   const procCancelEditBtn = document.getElementById('procCancelEditBtn');
   const procList = document.getElementById('procList');
 
+  const tabW1 = document.getElementById('tabW1');
+  const tabW2 = document.getElementById('tabW2');
+
   let uid = null;
-  let procedures = [];
+  let procsByPlace = { w1: [], w2: [] };
   let editingIndex = -1;
   let dragIndex = -1;
+  let activeSlot = 'w1';
 
   const applyPreview = ()=>{
-    p1.textContent = w1name.value || 'Hely1';
-    p1.style.background = w1color.value; p1.style.color = '#fff';
-    p2.textContent = w2name.value || 'Hely2';
-    p2.style.background = w2color.value; p2.style.color = '#fff';
+    tabW1.textContent = w1name.value?.trim() || 'Hely1';
+    tabW2.textContent = w2name.value?.trim() || 'Hely2';
+
+    p1.textContent = w1name.value?.trim() || 'Hely1';
+    p1.style.background = w1color.value || '#2563eb'; p1.style.color = '#fff';
+
+    p2.textContent = w2name.value?.trim() || 'Hely2';
+    p2.style.background = w2color.value || '#16a34a'; p2.style.color = '#fff';
   };
   [w1name,w2name,w1color,w2color].forEach(el=>el.addEventListener('input', applyPreview));
+
+  function setActive(slot){
+    activeSlot = slot;
+    if(slot==='w1'){ tabW1.classList.add('active'); tabW2.classList.remove('active'); }
+    else { tabW1.classList.remove('active'); tabW2.classList.add('active'); }
+    // szerkesztési mód törlése váltáskor
+    editingIndex = -1;
+    procInput.value = '';
+    procAddBtn.style.display='';
+    procSaveEditBtn.style.display='none';
+    procCancelEditBtn.style.display='none';
+    renderProcedures();
+  }
+  tabW1.onclick = ()=> setActive('w1');
+  tabW2.onclick = ()=> setActive('w2');
 
   function moveItem(arr, from, to){
     if(from===to || from<0 || to<0 || from>=arr.length || to>=arr.length) return arr;
@@ -268,14 +315,15 @@
 
   function renderProcedures(){
     procList.innerHTML = '';
-    if(procedures.length===0){
+    const list = procsByPlace[activeSlot] || [];
+    if(list.length===0){
       const span = document.createElement('span');
       span.className='muted';
-      span.textContent='Nincs még gyors beavatkozás. Adj hozzá fent!';
+      span.textContent='Nincs még gyors beavatkozás ezen a helyen. Adj hozzá fent!';
       procList.appendChild(span);
       return;
     }
-    procedures.forEach((name, idx)=>{
+    list.forEach((name, idx)=>{
       const chip = document.createElement('span');
       chip.className = 'chip';
       chip.setAttribute('draggable','true');
@@ -292,14 +340,12 @@
       const mv = document.createElement('span');
       mv.className='mv';
       const left = document.createElement('button');
-      left.type='button'; left.textContent='◀︎';
-      left.title='Balra';
-      left.onclick = ()=>{ moveItem(procedures, idx, Math.max(0,idx-1)); renderProcedures(); };
+      left.type='button'; left.textContent='◀︎'; left.title='Balra';
+      left.onclick = ()=>{ moveItem(list, idx, Math.max(0,idx-1)); renderProcedures(); };
 
       const right = document.createElement('button');
-      right.type='button'; right.textContent='▶︎';
-      right.title='Jobbra';
-      right.onclick = ()=>{ moveItem(procedures, idx, Math.min(procedures.length-1,idx+1)); renderProcedures(); };
+      right.type='button'; right.textContent='▶︎'; right.title='Jobbra';
+      right.onclick = ()=>{ moveItem(list, idx, Math.min(list.length-1,idx+1)); renderProcedures(); };
       mv.appendChild(left); mv.appendChild(right);
 
       const edit = document.createElement('span');
@@ -316,7 +362,7 @@
       const del = document.createElement('span');
       del.className='mini'; del.textContent='×'; del.title='Törlés';
       del.onclick = ()=>{
-        procedures.splice(idx,1);
+        list.splice(idx,1);
         renderProcedures();
       };
 
@@ -339,7 +385,7 @@
         e.preventDefault();
         const overIndex = Number(chip.dataset.index);
         if(dragIndex!==-1 && overIndex!==dragIndex){
-          moveItem(procedures, dragIndex, overIndex);
+          moveItem(list, dragIndex, overIndex);
           dragIndex = overIndex;
           renderProcedures();
         }
@@ -352,19 +398,22 @@
   function addFromInput(){
     const raw = (procInput.value||'').trim();
     if(!raw) return;
+    const target = procsByPlace[activeSlot] || [];
     raw.split(',').map(s=>s.trim()).filter(Boolean).forEach(item=>{
-      if(!procedures.includes(item)) procedures.push(item);
+      if(!target.includes(item) && target.length<100) target.push(item);
     });
+    procsByPlace[activeSlot] = target;
     procInput.value='';
     renderProcedures();
   }
-
   procAddBtn.onclick = addFromInput;
 
   procSaveEditBtn.onclick = ()=>{
     const val = (procInput.value||'').trim();
-    if(val && editingIndex>=0){
-      procedures[editingIndex] = val;
+    const list = procsByPlace[activeSlot] || [];
+    if(val && editingIndex>=0 && editingIndex<list.length){
+      list[editingIndex] = val;
+      procsByPlace[activeSlot] = list;
       editingIndex = -1;
       procInput.value='';
       procAddBtn.style.display='';
@@ -395,18 +444,32 @@
     const sRef = doc(db,'users',uid,'meta','settings');
     const snap = await getDoc(sRef);
     if(!snap.exists()){
-      await setDoc(sRef,{ w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a', procedures: [] });
+      await setDoc(sRef,{
+        w1name:'Hely1', w1pct:0.30, w1color:'#2563eb',
+        w2name:'Hely2', w2pct:0.40, w2color:'#16a34a',
+        proceduresByPlace:{ w1:[], w2:[] },
+        procedures:[]
+      });
     }
-    const s = (await getDoc(sRef)).data();
+    const s = (await getDoc(sRef)).data() || {};
     w1name.value = s.w1name ?? 'Hely1';
     w1pct.value  = s.w1pct ?? 0.30;
     w1color.value= s.w1color ?? '#2563eb';
     w2name.value = s.w2name ?? 'Hely2';
     w2pct.value  = s.w2pct ?? 0.40;
     w2color.value= s.w2color ?? '#16a34a';
-    procedures = Array.isArray(s.procedures) ? s.procedures.slice(0,100) : [];
+
+    // visszafelé kompatibilitás: ha nincs proceduresByPlace, örököljön a legacy 'procedures' listából
+    const legacy = Array.isArray(s.procedures)? s.procedures : [];
+    const pbp = (s.proceduresByPlace && typeof s.proceduresByPlace==='object')
+      ? { w1: Array.isArray(s.proceduresByPlace.w1)? s.proceduresByPlace.w1 : [],
+          w2: Array.isArray(s.proceduresByPlace.w2)? s.proceduresByPlace.w2 : [] }
+      : { w1: legacy, w2: legacy };
+
+    procsByPlace = { w1:[...pbp.w1].slice(0,100), w2:[...pbp.w2].slice(0,100) };
+
     applyPreview();
-    renderProcedures();
+    setActive('w1'); // render is hívódik
     hideLoader();
   });
 
@@ -424,7 +487,12 @@
         w2name: (w2name.value||'Hely2').trim(),
         w2pct: Math.max(0,Math.min(1,+w2pct.value||0.40)),
         w2color: w2color.value || '#16a34a',
-        procedures: procedures.slice(0,100)
+        proceduresByPlace: {
+          w1: (procsByPlace.w1||[]).slice(0,100),
+          w2: (procsByPlace.w2||[]).slice(0,100)
+        },
+        // kompat: írunk egy egyesített 'procedures' mezőt is
+        procedures: Array.from(new Set([...(procsByPlace.w1||[]), ...(procsByPlace.w2||[])])).slice(0,200)
       };
       await setDoc(doc(db,'users',uid,'meta','settings'), data, {merge:true});
       msgOk.classList.remove('hide');
