@@ -308,20 +308,38 @@
     return seq;
   }
 
-  // --- ÚJ: Segédfüggvény – beavatkozások szétvágása vessző szerint
+  // === Kis-/nagybetűtől független kezelés
+  function normalizeProcName(s){
+    return (s||'')
+      .trim()
+      .replace(/\s+/g,' ')
+      .toLocaleLowerCase('hu-HU');
+  }
+
+  // Segédfüggvény – beavatkozások szétvágása vessző szerint + case-insensitive egyedisítés
   function splitProcedures(text){
-    return (text||'')
+    const items = (text||'')
       .split(',')
       .map(s=>s.trim())
       .filter(Boolean);
+    const seen = new Set();
+    const out = [];
+    for(const it of items){
+      const k = normalizeProcName(it);
+      if(!seen.has(k)){ seen.add(k); out.push(it); }
+    }
+    return out;
   }
 
-  // --- ÚJ: Ha új beavatkozás(oka)t írt be, ajánljuk fel a gyorslistához adást
+  // Ha új beavatkozás(oka)t írt be, ajánljuk fel a gyorslistához adást (case-insensitive)
   async function maybeAddNewProceduresToSettings(procText){
     const items = splitProcedures(procText);
     const slot = currentSlot();
+
     const existing = (settings.proceduresByPlace?.[slot]) || [];
-    const missing = items.filter(x => !existing.includes(x));
+    const existingMap = new Map(existing.map(orig => [normalizeProcName(orig), orig]));
+
+    const missing = items.filter(x => !existingMap.has(normalizeProcName(x)));
     if(missing.length===0) return false;
 
     const placeName = slot==='w1' ? (settings.w1name||'Hely1') : (settings.w2name||'Hely2');
@@ -332,13 +350,29 @@
     );
     if(!ok) return false;
 
-    const updatedSlotList = Array.from(new Set([...existing, ...missing])).slice(0,100);
-    const mergedProcedures =
-      Array.from(new Set([
-        ...(settings.proceduresByPlace?.w1||[]),
-        ...(settings.proceduresByPlace?.w2||[]),
-        ...missing
-      ])).slice(0,200);
+    // frissített slot lista (az általad írt eredeti formával bővítünk)
+    const updated = existing.slice();
+    const updatedSeen = new Set(existing.map(normalizeProcName));
+    for(const m of missing){
+      const key = normalizeProcName(m);
+      if(!updatedSeen.has(key)){
+        updated.push(m);
+        updatedSeen.add(key);
+      }
+    }
+    const updatedSlotList = updated.slice(0,100);
+
+    // kompatibilitási 'procedures' mező összevonása case-insensitive módon
+    const allForCompat = [...(settings.proceduresByPlace?.w1||[]), ...(settings.proceduresByPlace?.w2||[]), ...missing];
+    const compatSeen = new Set();
+    const mergedProcedures = [];
+    for(const p of allForCompat){
+      const k = normalizeProcName(p);
+      if(!compatSeen.has(k)){
+        compatSeen.add(k);
+        mergedProcedures.push(p);
+      }
+    }
 
     await setDoc(
       doc(db,'users',currentUID,'meta','settings'),
@@ -347,8 +381,7 @@
           ...(settings.proceduresByPlace||{w1:[],w2:[]}),
           [slot]: updatedSlotList
         },
-        // kompat mező
-        procedures: mergedProcedures
+        procedures: mergedProcedures.slice(0,200)
       },
       { merge:true }
     );
@@ -382,7 +415,7 @@
 
     saveBtn.disabled = true;
     try{
-      // --- ÚJ: mentés előtt felajánljuk a hiányzók gyorslistához adását
+      // mentés előtt felajánljuk a hiányzók gyorslistához adását (kis-/nagybetű független)
       await maybeAddNewProceduresToSettings(payload.procedure);
 
       const seq = await nextMonthlySeq(currentUID, mKey);
