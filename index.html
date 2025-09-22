@@ -90,8 +90,16 @@
     <div id="saveErr" class="alert err hide"></div>
 
     <div class="row">
-      <div><label>Dátum</label><input type="date" id="date"></div>
-      <div><label>Páciens neve</label><input type="text" id="patient" placeholder="Pl. Kiss Anna" autocomplete="name"></div>
+      <div>
+        <label>Dátum</label>
+        <input type="date" id="date">
+      </div>
+      <div>
+        <label>Páciens neve</label>
+        <!-- ÚJ: datalist az ajánlásokhoz -->
+        <input type="text" id="patient" placeholder="Pl. Kiss Anna" autocomplete="name" list="patientList">
+        <datalist id="patientList"></datalist>
+      </div>
     </div>
 
     <div>
@@ -101,8 +109,16 @@
     </div>
 
     <div class="row">
-      <div><label>Fizetett összeg (HUF)</label><input type="number" id="amount" min="0" step="1" inputmode="numeric" placeholder="pl. 25000"></div>
-      <div><label>Munkahely</label><select id="workplace"></select></div>
+      <div>
+        <label>Fizetett összeg (HUF)</label>
+        <!-- ÚJ: datalist az összeg-ajánlásokhoz -->
+        <input type="number" id="amount" min="0" step="1" inputmode="numeric" placeholder="pl. 25000" list="amountList">
+        <datalist id="amountList"></datalist>
+      </div>
+      <div>
+        <label>Munkahely</label>
+        <select id="workplace"></select>
+      </div>
     </div>
 
     <div class="toolbar">
@@ -115,7 +131,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, collection, addDoc, doc, getDoc, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, doc, getDoc, setDoc, runTransaction, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey:"AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
@@ -144,9 +160,11 @@
 
   const dateEl = document.getElementById('date');
   const patientEl = document.getElementById('patient');
+  const patientListEl = document.getElementById('patientList');
   const procedureEl = document.getElementById('procedure');
   const quickWrap = document.getElementById('quickProcedures');
   const amountEl = document.getElementById('amount');
+  const amountListEl = document.getElementById('amountList');
   const workplaceEl = document.getElementById('workplace');
   const resetBtn = document.getElementById('resetBtn');
   const saveBtn = document.getElementById('saveBtn');
@@ -160,6 +178,12 @@
     w2name:'Hely2', w2pct:0.40, w2color:'#16a34a',
     proceduresByPlace:{ w1:[], w2:[] }
   };
+
+  // === Indexek az ajánlásokhoz ===
+  // Páciensnév: norm -> legutóbbi eredeti írásmód
+  const patientsIndex = new Map(); // key: lc name, val: original
+  // Összeg-ajánlás: kulcs (beavatkozás-kombináció, normalizált és rendezett) -> amount -> count
+  const amountIndex = new Map(); // key: comboKey, val: Map(amountNumber -> freq)
 
   const hideLoader = ()=> loader.classList.add('hide');
   const showLoader = ()=> loader.classList.remove('hide');
@@ -255,6 +279,34 @@
       await setDoc(sRef, settings);
     }
     uiAuth(true, user);
+
+    // ÚJ: hallgassuk az utolsó ~1000 bejegyzést ajánlásokhoz
+    const qRef = query(
+      collection(db,'users',currentUID,'entries'),
+      orderBy('createdAt','desc'),
+      limit(1000)
+    );
+    onSnapshot(qRef, (qs)=>{
+      patientsIndex.clear();
+      amountIndex.clear();
+      qs.forEach(d=>{
+        const e = d.data();
+        // páciens index
+        const name = (e.patient||'').trim();
+        if(name){
+          patientsIndex.set(name.toLowerCase(), name); // utolsó írásmódot őrizzük
+        }
+        // összeg index a beavatkozás-kombinációra
+        const comboKey = makeProcedureComboKey(e.procedure||'');
+        if(comboKey && typeof e.amount === 'number' && e.amount>0){
+          if(!amountIndex.has(comboKey)) amountIndex.set(comboKey, new Map());
+          const m = amountIndex.get(comboKey);
+          m.set(e.amount, (m.get(e.amount)||0)+1);
+        }
+      });
+      refreshPatientDatalist();
+      refreshAmountDatalist(); // ha már írt valamit a procedúrába, frissüljön
+    });
   });
 
   async function loadSettingsAndBindWorkplaces(){
@@ -293,6 +345,7 @@
     setSelectBG(workplaceEl.value);
     renderQuickProcedures();
     patientEl.focus();
+    refreshAmountDatalist();
   }
   resetBtn.onclick = clearForm;
 
@@ -308,30 +361,62 @@
     return seq;
   }
 
-  // === Kis-/nagybetűtől független kezelés
+  // === Normalizálás és bontás (case-insensitive, sorrendfüggetlen kulcs)
   function normalizeProcName(s){
-    return (s||'')
-      .trim()
-      .replace(/\s+/g,' ')
-      .toLocaleLowerCase('hu-HU');
+    return (s||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('hu-HU');
   }
-
-  // Segédfüggvény – beavatkozások szétvágása vessző szerint + case-insensitive egyedisítés
   function splitProcedures(text){
     const items = (text||'')
       .split(',')
       .map(s=>s.trim())
       .filter(Boolean);
-    const seen = new Set();
-    const out = [];
+    // egyedisítés case-insensitive
+    const seen = new Set(), out=[];
     for(const it of items){
       const k = normalizeProcName(it);
       if(!seen.has(k)){ seen.add(k); out.push(it); }
     }
     return out;
   }
+  function makeProcedureComboKey(text){
+    const parts = splitProcedures(text).map(normalizeProcName).sort();
+    return parts.length ? parts.join(' | ') : '';
+  }
 
-  // Ha új beavatkozás(oka)t írt be, ajánljuk fel a gyorslistához adást (case-insensitive)
+  // === Páciens datalist frissítése
+  function refreshPatientDatalist(){
+    if(!patientListEl) return;
+    patientListEl.innerHTML = '';
+    // legutóbbi írásmódok alfabetikusan
+    const values = Array.from(patientsIndex.values()).sort((a,b)=>a.localeCompare(b,'hu-HU'));
+    for(const v of values){
+      const opt = document.createElement('option');
+      opt.value = v;
+      patientListEl.appendChild(opt);
+    }
+  }
+
+  // === Összeg datalist frissítése az aktuális beavatkozás-kombinációhoz
+  function refreshAmountDatalist(){
+    if(!amountListEl) return;
+    amountListEl.innerHTML = '';
+    const key = makeProcedureComboKey(procedureEl.value||'');
+    if(!key || !amountIndex.has(key)) return;
+    const map = amountIndex.get(key); // Map(amount->freq)
+    const pairs = Array.from(map.entries())
+      .sort((a,b)=> b[1]-a[1] || b[0]-a[0]) // leggyakoribbak/legnagyobb felül
+      .slice(0,5); // max 5 opció
+    for(const [amt] of pairs){
+      const opt = document.createElement('option');
+      opt.value = String(amt);
+      amountListEl.appendChild(opt);
+    }
+  }
+
+  // élő frissítés gépelés közben
+  procedureEl.addEventListener('input', refreshAmountDatalist);
+
+  // === Gyorslista-bővítés kérdéssel (case-insensitive)
   async function maybeAddNewProceduresToSettings(procText){
     const items = splitProcedures(procText);
     const slot = currentSlot();
@@ -350,7 +435,6 @@
     );
     if(!ok) return false;
 
-    // frissített slot lista (az általad írt eredeti formával bővítünk)
     const updated = existing.slice();
     const updatedSeen = new Set(existing.map(normalizeProcName));
     for(const m of missing){
@@ -362,7 +446,7 @@
     }
     const updatedSlotList = updated.slice(0,100);
 
-    // kompatibilitási 'procedures' mező összevonása case-insensitive módon
+    // kompatibilitási 'procedures' mező
     const allForCompat = [...(settings.proceduresByPlace?.w1||[]), ...(settings.proceduresByPlace?.w2||[]), ...missing];
     const compatSeen = new Set();
     const mergedProcedures = [];
@@ -386,7 +470,6 @@
       { merge:true }
     );
 
-    // helyi állapot + UI frissítés
     settings.proceduresByPlace = {
       ...(settings.proceduresByPlace||{w1:[],w2:[]}),
       [slot]: updatedSlotList
@@ -415,9 +498,7 @@
 
     saveBtn.disabled = true;
     try{
-      // mentés előtt felajánljuk a hiányzók gyorslistához adását (kis-/nagybetű független)
       await maybeAddNewProceduresToSettings(payload.procedure);
-
       const seq = await nextMonthlySeq(currentUID, mKey);
       await addDoc(collection(db,'users',currentUID,'entries'), { ...payload, monthKey: mKey, seq });
       localStorage.setItem(lastKey(), payload.workplace);
