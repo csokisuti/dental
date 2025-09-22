@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-<!-- iOS főképernyős "app" beállítások (egyezzen az ikonfájlod nevével) -->
 <link rel="apple-touch-icon" href="dent.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -13,10 +12,7 @@
 
 <title>Beállítások – Fogorvosi bevételkövető</title>
 <style>
-  :root{
-    --bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;
-    --primary:#2563eb;--shadow:0 6px 25px rgba(15,23,42,.08)
-  }
+  :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--shadow:0 6px 25px rgba(15,23,42,.08)}
   *{box-sizing:border-box}
   html,body{height:100%}
   html{-webkit-text-size-adjust:100%}
@@ -32,13 +28,10 @@
   h1{margin:0 0 6px;font-size:20px}
   h2{margin:0 0 10px;font-size:16px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-
-  /* Form elemek – 16px, hogy iOS ne zoomoljon */
-  input, .row input, .row select{
+  input,.row input,.row select{
     width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;
     font-size:16px;appearance:none;-webkit-appearance:none;
   }
-  /* Select kis nyíl */
   .row select{
     background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),
                       linear-gradient(135deg, #94a3b8 50%, transparent 50%),
@@ -48,7 +41,6 @@
     background-repeat: no-repeat;
     padding-right:36px;
   }
-
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
@@ -61,7 +53,6 @@
   .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
   .muted{color:var(--muted);font-size:12px}
   .pill{display:inline-block;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-weight:600}
-
   .hide{display:none !important}
   .ok{padding:10px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
   .err{padding:10px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
@@ -69,13 +60,18 @@
   /* Gyors beavatkozások szerkesztése */
   .chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
   .chip{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;font-weight:600
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;font-weight:600;
+    user-select:none
   }
   .chip .mini{font-size:12px;opacity:.8;cursor:pointer}
   .chip .mini:hover{opacity:1;text-decoration:underline}
+  .chip .drag{cursor:grab;opacity:.7}
+  .chip.dragging{opacity:.5}
+  .chip .mv{display:inline-flex;gap:4px}
+  .chip .mv button{padding:2px 8px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:12px}
 
-  /* Loader overlay (safe-area) */
+  /* Loader */
   .loader{
     position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
     background:var(--bg);z-index:9999;transition:opacity .25s ease;
@@ -87,7 +83,7 @@
   .tooth{width:64px;height:64px}
   .loader-text{color:var(--muted);font-weight:600}
 
-  @media (max-width: 640px){
+  @media (max-width:640px){
     .layout{padding:16px}
     .row{grid-template-columns:1fr}
     .row3{grid-template-columns:1fr}
@@ -96,14 +92,13 @@
 </style>
 </head>
 <body>
-<!-- BETÖLTŐ KÉPERNYŐ -->
 <div id="loader" class="loader">
   <div class="loader-inner">
     <svg class="tooth" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Betöltés">
       <path d="M20 8c-6 0-10 5-10 12 0 9 5 14 9 17 4 3 5 15 9 15s5-9 9-9 5 9 9 9 5-12 9-15c4-3 9-8 9-17 0-7-4-12-10-12-5 0-9 2-12 5-3-3-7-5-12-5z" stroke="#2563eb" stroke-width="2" fill="#fff"/>
       <circle cx="26" cy="24" r="2.5" fill="#0f172a"/>
       <circle cx="38" cy="24" r="2.5" fill="#0f172a"/>
-      <path d="M24 33c2 3 6 5 8 5s6-2 8-5" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />
+      <path d="M24 33c2 3 6 5 8 5s6-2 8-5" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
     </svg>
     <div class="loader-text">Betöltés…</div>
   </div>
@@ -192,7 +187,7 @@
         <button class="btn" id="procCancelEditBtn" style="display:none">Mégse</button>
       </div>
     </div>
-    <div class="muted" style="margin-top:6px">Tipp: vesszővel elválasztva több elemet is hozzáadhatsz egyszerre.</div>
+    <div class="muted" style="margin-top:6px">Tipp: vesszővel elválasztva több elemet is hozzáadhatsz egyszerre. Fogd-és-vidd módszerrel vagy a ◀︎/▶︎ nyilakkal módosíthatod a sorrendet.</div>
     <div id="procList" class="chip-list"></div>
 
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap">
@@ -245,7 +240,6 @@
   const msgOk = document.getElementById('msgOk');
   const msgErr = document.getElementById('msgErr');
 
-  // Gyors beavatkozások UI
   const procInput = document.getElementById('procInput');
   const procAddBtn = document.getElementById('procAddBtn');
   const procSaveEditBtn = document.getElementById('procSaveEditBtn');
@@ -253,19 +247,24 @@
   const procList = document.getElementById('procList');
 
   let uid = null;
-  let procedures = []; // string[]
+  let procedures = [];
   let editingIndex = -1;
+  let dragIndex = -1;
 
   const applyPreview = ()=>{
     p1.textContent = w1name.value || 'Hely1';
-    p1.style.background = w1color.value;
-    p1.style.color = '#fff';
+    p1.style.background = w1color.value; p1.style.color = '#fff';
     p2.textContent = w2name.value || 'Hely2';
-    p2.style.background = w2color.value;
-    p2.style.color = '#fff';
+    p2.style.background = w2color.value; p2.style.color = '#fff';
   };
-
   [w1name,w2name,w1color,w2color].forEach(el=>el.addEventListener('input', applyPreview));
+
+  function moveItem(arr, from, to){
+    if(from===to || from<0 || to<0 || from>=arr.length || to>=arr.length) return arr;
+    const item = arr.splice(from,1)[0];
+    arr.splice(to,0,item);
+    return arr;
+  }
 
   function renderProcedures(){
     procList.innerHTML = '';
@@ -279,11 +278,32 @@
     procedures.forEach((name, idx)=>{
       const chip = document.createElement('span');
       chip.className = 'chip';
+      chip.setAttribute('draggable','true');
+      chip.dataset.index = idx;
+
+      const drag = document.createElement('span');
+      drag.className='mini drag';
+      drag.textContent='⠿';
+      drag.title='Fogd meg és húzd új helyre';
+
       const text = document.createElement('span');
       text.textContent = name;
+
+      const mv = document.createElement('span');
+      mv.className='mv';
+      const left = document.createElement('button');
+      left.type='button'; left.textContent='◀︎';
+      left.title='Balra';
+      left.onclick = ()=>{ moveItem(procedures, idx, Math.max(0,idx-1)); renderProcedures(); };
+
+      const right = document.createElement('button');
+      right.type='button'; right.textContent='▶︎';
+      right.title='Jobbra';
+      right.onclick = ()=>{ moveItem(procedures, idx, Math.min(procedures.length-1,idx+1)); renderProcedures(); };
+      mv.appendChild(left); mv.appendChild(right);
+
       const edit = document.createElement('span');
-      edit.className='mini'; edit.textContent='✎';
-      edit.title='Szerkesztés';
+      edit.className='mini'; edit.textContent='✎'; edit.title='Szerkesztés';
       edit.onclick = ()=>{
         editingIndex = idx;
         procInput.value = name;
@@ -292,16 +312,39 @@
         procCancelEditBtn.style.display='';
         procInput.focus();
       };
+
       const del = document.createElement('span');
-      del.className='mini'; del.textContent='×';
-      del.title='Törlés';
+      del.className='mini'; del.textContent='×'; del.title='Törlés';
       del.onclick = ()=>{
         procedures.splice(idx,1);
         renderProcedures();
       };
+
+      chip.appendChild(drag);
       chip.appendChild(text);
+      chip.appendChild(mv);
       chip.appendChild(edit);
       chip.appendChild(del);
+
+      chip.addEventListener('dragstart', (e)=>{
+        dragIndex = Number(chip.dataset.index);
+        chip.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      chip.addEventListener('dragend', ()=>{
+        dragIndex = -1;
+        chip.classList.remove('dragging');
+      });
+      chip.addEventListener('dragover', (e)=>{
+        e.preventDefault();
+        const overIndex = Number(chip.dataset.index);
+        if(dragIndex!==-1 && overIndex!==dragIndex){
+          moveItem(procedures, dragIndex, overIndex);
+          dragIndex = overIndex;
+          renderProcedures();
+        }
+      });
+
       procList.appendChild(chip);
     });
   }
