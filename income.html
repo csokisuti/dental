@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-<!-- iOS főképernyős "app" beállítások (ugyanaz ikon, mint indexen) -->
 <link rel="apple-touch-icon" href="dent.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -13,55 +12,26 @@
 
 <title>Bevételek – Fogorvosi bevételkövető</title>
 <style>
-  :root{
-    --bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;
-    --primary:#2563eb;--danger:#ef4444;--shadow:0 6px 25px rgba(15,23,42,.08)
-  }
+  :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--danger:#ef4444;--shadow:0 6px 25px rgba(15,23,42,.08)}
   *{box-sizing:border-box}
   html,body{height:100%}
   html{-webkit-text-size-adjust:100%}
-  body{
-    margin:0;background:var(--bg);color:var(--text);
-    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
-    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right)
-             env(safe-area-inset-bottom) env(safe-area-inset-left);
-  }
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;-webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
   .layout{max-width:1100px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
   h1{margin:0 0 6px;font-size:20px}
   h2{margin:0 0 10px;font-size:16px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-
-  input,select{
-    width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;
-    font-size:16px; /* iOS ne zoomoljon */
-    appearance:none;-webkit-appearance:none;
-  }
-  select{
-    background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),
-                      linear-gradient(135deg, #94a3b8 50%, transparent 50%),
-                      linear-gradient(to right, transparent, transparent);
-    background-position: calc(100% - 16px) 50%, calc(100% - 12px) 50%, 0 0;
-    background-size: 6px 6px, 6px 6px, 100% 100%;
-    background-repeat: no-repeat;
-    padding-right:36px;
-  }
-
+  input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:16px;appearance:none;-webkit-appearance:none}
+  select{background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),linear-gradient(135deg, #94a3b8 50%, transparent 50%),linear-gradient(to right, transparent, transparent);background-position: calc(100% - 16px) 50%, calc(100% - 12px) 50%, 0 0;background-size: 6px 6px, 6px 6px, 100% 100%;background-repeat: no-repeat;padding-right:36px}
   .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
   .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-
-  .btn{
-    display:inline-flex;align-items:center;gap:6px;padding:12px 14px;border:1px solid var(--line);
-    border-radius:10px;background:#fff;cursor:pointer;text-decoration:none;color:inherit;
-    font-size:16px;min-height:44px;touch-action:manipulation;
-  }
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;text-decoration:none;color:inherit;font-size:16px;min-height:44px;touch-action:manipulation}
   .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
   .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
   .btn:disabled{opacity:.6;cursor:not-allowed}
-
   table{width:100%;border-collapse:collapse}
   th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
   th{font-size:12px;color:var(--muted);font-weight:600}
@@ -73,32 +43,17 @@
   .hide{display:none !important}
   .ok{padding:8px 10px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
   .err{padding:8px 10px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
-
-  /* Loader overlay */
-  .loader{
-    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:var(--bg);z-index:9999;transition:opacity .25s ease;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right)
-             env(safe-area-inset-bottom) env(safe-area-inset-left);
-  }
+  .loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;transition:opacity .25s ease;padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
   .loader.hide{opacity:0;pointer-events:none}
   .loader-inner{display:flex;flex-direction:column;align-items:center;gap:12px}
   .tooth{width:64px;height:64px}
   .spin{animation:spin 1.1s linear infinite}
   @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   .loader-text{color:var(--muted);font-weight:600}
-
-  @media (max-width: 640px){
-    .layout{padding:16px}
-    .row{grid-template-columns:1fr}
-    .row2{grid-template-columns:1fr}
-    .btn{width:100%}
-    th,td{padding:8px}
-  }
+  @media (max-width: 640px){.layout{padding:16px}.row{grid-template-columns:1fr}.row2{grid-template-columns:1fr}.btn{width:100%}th,td{padding:8px}}
 </style>
 </head>
 <body>
-<!-- BETÖLTŐ KÉPERNYŐ -->
 <div id="loader" class="loader">
   <div class="loader-inner">
     <svg class="tooth spin" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Betöltés">
@@ -200,6 +155,7 @@
       <table id="entriesTable">
         <thead>
           <tr>
+            <th>#</th>
             <th>Dátum</th>
             <th>Páciens</th>
             <th>Beavatkozás</th>
@@ -213,7 +169,8 @@
         <tbody></tbody>
         <tfoot>
           <tr>
-            <td colspan="4" class="right total">Összesen (szűrt):</td>
+            <td></td>
+            <td colspan="3" class="right total">Összesen (szűrt):</td>
             <td class="right total" id="sumGross">0</td>
             <td></td>
             <td class="right total" id="sumOwn">0</td>
@@ -228,7 +185,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, query, orderBy, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, query, orderBy, updateDoc, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
@@ -244,7 +201,6 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // UI
   const loader = document.getElementById('loader');
   const showLoader = ()=> loader.classList.remove('hide');
   const hideLoader = ()=> loader.classList.add('hide');
@@ -282,8 +238,8 @@
   let entries = [];
   let settings = { w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a' };
   let editingId = null;
+  let editingOriginalMonthKey = null;
 
-  // --- helpers ---
   const hexToRgb = (hex)=>{ const h = hex.replace('#',''); const b = parseInt(h.length===3? h.split('').map(x=>x+x).join(''):h,16); return {r:(b>>16)&255,g:(b>>8)&255,b:b&255}; };
   const contrast = (hex)=>{ const {r,g,b} = hexToRgb(hex||'#999'); const yiq=(r*299+g*587+b*114)/1000; return yiq>=128?'#000':'#fff'; };
   const fmt = n => (n||0).toLocaleString('hu-HU',{maximumFractionDigits:0});
@@ -298,10 +254,9 @@
     [settings.w1name, settings.w2name].forEach(n=>{
       const o=document.createElement('option'); o.value=n; o.textContent=n; select.appendChild(o);
     });
-    if(withAll) select.selectedIndex = 0; // alapértelmezett: Összesen
+    if(withAll) select.selectedIndex = 0;
   }
 
-  // snapshot frissítésekor ne számoljuk újra végtelenségig
   const updatedOnce = new Set();
 
   async function normalizeMissingCalculations(list){
@@ -309,19 +264,18 @@
     for(const e of list){
       const shouldHavePct = pctFor(e.workplace);
       const computedOwn = Math.round((+e.amount||0) * shouldHavePct);
-
       const missingPct = (e.pctAtSave == null);
       const missingOwn = (e.ownAtSave == null);
       const wrongOwn = (!missingOwn && e.ownAtSave !== computedOwn);
 
-      if((missingPct || missingOwn || wrongOwn) && !updatedOnce.has(e.id)){
+      const needMonthKey = !e.monthKey && e.date;
+      if((missingPct || missingOwn || wrongOwn || needMonthKey) && !updatedOnce.has(e.id)){
         updatedOnce.add(e.id);
-        ops.push(
-          updateDoc(doc(db,'users',uid,'entries',e.id), {
-            pctAtSave: shouldHavePct,
-            ownAtSave: computedOwn
-          }).catch(()=>{})
-        );
+        const patch = {};
+        if(missingPct) patch.pctAtSave = shouldHavePct;
+        if(missingOwn || wrongOwn) patch.ownAtSave = computedOwn;
+        if(needMonthKey) patch.monthKey = monthKey(e.date);
+        ops.push(updateDoc(doc(db,'users',uid,'entries',e.id), patch).catch(()=>{}));
       }
     }
     if(ops.length) await Promise.all(ops);
@@ -340,11 +294,8 @@
     authCard.classList.add('hide');
     filters.classList.remove('hide');
     listCard.classList.remove('hide');
-
-    // Alapértelmezett: aktuális hónap (YYYY-MM)
     filterMonth.value = new Date().toISOString().slice(0, 7);
 
-    // settings betöltés
     const sRef = doc(db,'users',uid,'meta','settings');
     const snap = await getDoc(sRef);
     if(!snap.exists()){
@@ -353,20 +304,16 @@
       settings = { ...settings, ...snap.data() };
     }
 
-    // legördülők
     bindWorkplaceSelect(filterWorkplace, true);
     bindWorkplaceSelect(editWorkplace, false);
 
-    // entries realtime
     const qRef = query(collection(db,'users',uid,'entries'), orderBy('date','desc'));
     onSnapshot(qRef, async s=>{
       const arr = []; s.forEach(d=>arr.push({id:d.id, ...d.data()}));
       entries = arr;
-
       await normalizeMissingCalculations(entries);
-
       render();
-      hideLoader(); // első render után
+      hideLoader();
     });
   });
 
@@ -384,15 +331,27 @@
     const w = filterWorkplace.value;
     const p = (filterPatient.value||'').toLowerCase().trim();
     return entries.filter(e=>{
-      const okM = m ? monthKey(e.date)===m : true;
-      const okW = w ? e.workplace===w : true; // üres = Összesen
+      const okM = m ? (e.monthKey ? e.monthKey===m : monthKey(e.date)===m) : true;
+      const okW = w ? e.workplace===w : true;
       const okP = p ? (e.patient||'').toLowerCase().includes(p) : true;
       return okM && okW && okP;
     });
   }
 
+  function sortBySeq(list){
+    // seq növekvő, hiányzó seq a végére (createdAt / date szerint)
+    return list.slice().sort((a,b)=>{
+      const sa = (typeof a.seq==='number') ? a.seq : Number.POSITIVE_INFINITY;
+      const sb = (typeof b.seq==='number') ? b.seq : Number.POSITIVE_INFINITY;
+      if(sa!==sb) return sa - sb;
+      const da = a.createdAt || new Date(a.date||'1970-01-01').getTime();
+      const db = b.createdAt || new Date(b.date||'1970-01-01').getTime();
+      return da - db;
+    });
+  }
+
   function render(){
-    const list = filtered();
+    const list = sortBySeq(filtered());
     tableBody.innerHTML = '';
     let sumG = 0, sumO = 0;
 
@@ -408,6 +367,7 @@
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
+        <td>${(typeof e.seq==='number') ? e.seq : ''}</td>
         <td>${e.date||''}</td>
         <td>${e.patient||''}</td>
         <td>${e.procedure||''}</td>
@@ -432,6 +392,7 @@
       const it = entries.find(x=>x.id===id);
       if(!it) return;
       editingId = id;
+      editingOriginalMonthKey = it.monthKey || monthKey(it.date);
       editor.classList.remove('hide');
       editDate.value = it.date || '';
       editPatient.value = it.patient || '';
@@ -442,18 +403,27 @@
       editWorkplace.selectedIndex = idx>=0?idx:0;
       window.scrollTo({top:0,behavior:'smooth'});
     }else if(del){
-      if(confirm('Biztosan törlöd?')){
-        await deleteDoc(doc(db,'users',uid,'entries',del));
-      }
+      if(confirm('Biztosan törlöd?')){ await deleteDoc(doc(db,'users',uid,'entries',del)); }
     }
   });
 
   cancelEdit.onclick = ()=>{
-    editingId = null;
+    editingId = null; editingOriginalMonthKey = null;
     editor.classList.add('hide');
-    editErr.classList.add('hide');
-    editMsg.classList.add('hide');
+    editErr.classList.add('hide'); editMsg.classList.add('hide');
   };
+
+  async function nextMonthlySeq(uid, month){
+    const counterRef = doc(db,'users',uid,'meta','counters',month);
+    const seq = await runTransaction(db, async (tx)=>{
+      const snap = await tx.get(counterRef);
+      const cur = snap.exists() ? (snap.data().lastSeq||0) : 0;
+      const next = cur + 1;
+      tx.set(counterRef, { lastSeq: next }, { merge:true });
+      return next;
+    });
+    return seq;
+  }
 
   saveEdit.onclick = async ()=>{
     if(!editingId) return;
@@ -470,18 +440,28 @@
       editErr.textContent = 'Minden mező kötelező (dátum, páciens, beavatkozás, összeg, munkahely).';
       editErr.classList.remove('hide'); return;
     }
+    const newMonthKey = monthKey(payload.date);
+    if(!newMonthKey){ editErr.textContent='Érvénytelen dátum.'; editErr.classList.remove('hide'); return; }
+
     const pct = pctFor(payload.workplace);
     const own = Math.round(payload.amount * pct);
 
     try{
-      await updateDoc(doc(db,'users',uid,'entries',editingId), {
+      const patch = {
         ...payload,
         pctAtSave: pct,
         ownAtSave: own,
+        monthKey: newMonthKey,
         updatedAt: Date.now()
-      });
+      };
+      if(newMonthKey !== editingOriginalMonthKey){
+        const newSeq = await nextMonthlySeq(uid, newMonthKey);
+        patch.seq = newSeq;
+      }
+      await updateDoc(doc(db,'users',uid,'entries',editingId), patch);
       editMsg.classList.remove('hide');
       setTimeout(()=>{ editMsg.classList.add('hide'); editor.classList.add('hide'); }, 1200);
+      editingId = null; editingOriginalMonthKey = null;
     }catch(err){
       editErr.textContent = err?.message || 'Mentési hiba';
       editErr.classList.remove('hide');
