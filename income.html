@@ -23,7 +23,12 @@
   h2{margin:0 0 10px;font-size:16px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
   input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:16px;appearance:none;-webkit-appearance:none}
-  select{background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),linear-gradient(135deg, #94a3b8 50%, transparent 50%),linear-gradient(to right, transparent, transparent);background-position: calc(100% - 16px) 50%, calc(100% - 12px) 50%, 0 0;background-size: 6px 6px, 6px 6px, 100% 100%;background-repeat: no-repeat;padding-right:36px}
+  select{background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),
+                         linear-gradient(135deg, #94a3b8 50%, transparent 50%),
+                         linear-gradient(to right, transparent, transparent);
+         background-position: calc(100% - 16px) 50%, calc(100% - 12px) 50%, 0 0;
+         background-size: 6px 6px, 6px 6px, 100% 100%;
+         background-repeat: no-repeat;padding-right:36px}
   .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .topbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
@@ -50,7 +55,13 @@
   .spin{animation:spin 1.1s linear infinite}
   @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
   .loader-text{color:var(--muted);font-weight:600}
-  @media (max-width: 640px){.layout{padding:16px}.row{grid-template-columns:1fr}.row2{grid-template-columns:1fr}.btn{width:100%}th,td{padding:8px}}
+  @media (max-width: 640px){
+    .layout{padding:16px}
+    .row{grid-template-columns:1fr}
+    .row2{grid-template-columns:1fr}
+    .btn{width:100%}
+    th,td{padding:8px}
+  }
 </style>
 </head>
 <body>
@@ -113,14 +124,12 @@
       </div>
     </div>
 
-    <!-- MIGRÁLÁS SZEKCIÓ -->
-    <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-      <strong>Migrálás (havi sorszámozás):</strong>
-      <label style="display:inline-flex;gap:8px;align-items:center;font-size:14px">
-        <input type="checkbox" id="migrateOnlyMissing" checked> Csak ahol hiányzik a sorszám
-      </label>
-      <button class="btn" id="migrateBtn">Havi sorszámozás lefuttatása</button>
-      <span class="muted" id="migrateMsg"></span>
+    <!-- ÚJ: Nap szűrő -->
+    <div class="row2" style="margin-top:10px">
+      <div>
+        <label>Nap (opcionális)</label>
+        <input type="date" id="filterDay">
+      </div>
     </div>
   </div>
 
@@ -227,12 +236,9 @@
   const authMsg = document.getElementById('authMsg');
 
   const filterMonth = document.getElementById('filterMonth');
+  const filterDay = document.getElementById('filterDay');          // ÚJ
   const filterWorkplace = document.getElementById('filterWorkplace');
   const filterPatient = document.getElementById('filterPatient');
-
-  const migrateBtn = document.getElementById('migrateBtn');
-  const migrateOnlyMissing = document.getElementById('migrateOnlyMissing');
-  const migrateMsg = document.getElementById('migrateMsg');
 
   const tableBody = document.querySelector('#entriesTable tbody');
   const sumGrossEl = document.getElementById('sumGross');
@@ -309,6 +315,7 @@
     filters.classList.remove('hide');
     listCard.classList.remove('hide');
     filterMonth.value = new Date().toISOString().slice(0, 7);
+    filterDay.value = ''; // nap szűrő alapból üres
 
     const sRef = doc(db,'users',uid,'meta','settings');
     const snap = await getDoc(sRef);
@@ -335,37 +342,42 @@
   registerBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await createUserWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); showLoader(); }catch(e){ authMsg.textContent=e.message; } };
   logoutBtn.onclick = ()=>{ showLoader(); signOut(auth); };
 
-  [filterMonth, filterWorkplace, filterPatient].forEach(el=>{
+  [filterMonth, filterDay, filterWorkplace, filterPatient].forEach(el=>{
     el.addEventListener('input', render);
     el.addEventListener('change', render);
   });
 
   function filtered(){
     const m = filterMonth.value;
+    const d = filterDay.value;                   // ha meg van adva, elsőbbséget élvez
     const w = filterWorkplace.value;
     const p = (filterPatient.value||'').toLowerCase().trim();
     return entries.filter(e=>{
-      const okM = m ? (e.monthKey ? e.monthKey===m : monthKey(e.date)===m) : true;
+      const okD = d ? (e.date === d) : true;
+      const okM = (!d && m) ? (e.monthKey ? e.monthKey===m : monthKey(e.date)===m) : true;
       const okW = w ? e.workplace===w : true;
       const okP = p ? (e.patient||'').toLowerCase().includes(p) : true;
-      return okM && okW && okP;
+      return okD && okM && okW && okP;
     });
   }
 
-  function sortBySeq(list){
-    // seq növekvő, hiányzó seq a végére
+  // RENDEZÉS: sorszám szerint csökkenő, a hiányzó seq a végére; holtverseny: dátum és createdAt szerint csökkenő
+  function sortBySeqDesc(list){
     return list.slice().sort((a,b)=>{
-      const sa = (typeof a.seq==='number') ? a.seq : Number.POSITIVE_INFINITY;
-      const sb = (typeof b.seq==='number') ? b.seq : Number.POSITIVE_INFINITY;
-      if(sa!==sb) return sa - sb;
-      const da = a.createdAt || new Date(a.date||'1970-01-01').getTime();
-      const db = b.createdAt || new Date(b.date||'1970-01-01').getTime();
-      return da - db;
+      const sa = (typeof a.seq==='number') ? a.seq : -Infinity;
+      const sb = (typeof b.seq==='number') ? b.seq : -Infinity;
+      if(sb !== sa) return sb - sa; // nagyobb seq felül
+      const da = new Date(a.date||'1970-01-01').getTime();
+      const db = new Date(b.date||'1970-01-01').getTime();
+      if(db !== da) return db - da; // újabb dátum felül
+      const ca = a.createdAt || 0, cb = b.createdAt || 0;
+      if(cb !== ca) return cb - ca; // újabban létrehozott felül
+      return (b.id||'').localeCompare(a.id||''); // stabil lezárás
     });
   }
 
   function render(){
-    const list = sortBySeq(filtered());
+    const list = sortBySeqDesc(filtered());
     tableBody.innerHTML = '';
     let sumG = 0, sumO = 0;
 
@@ -427,8 +439,8 @@
     editErr.classList.add('hide'); editMsg.classList.add('hide');
   };
 
+  // havi számláló a sorszámhoz (új hónapba mozgatáskor)
   async function nextMonthlySeq(uid, month){
-    // JAVÍTOTT ÚTVONAL: users/<uid>/counters/<YYYY-MM>
     const counterRef = doc(db,'users',uid,'counters',month);
     const seq = await runTransaction(db, async (tx)=>{
       const snap = await tx.get(counterRef);
@@ -439,77 +451,6 @@
     });
     return seq;
   }
-
-  // MIGRÁLÁS: adott hónap sorszámainak beállítása
-  async function migrateMonthSeq(month, onlyMissing=true){
-    if(!uid) throw new Error('Nincs bejelentkezett felhasználó.');
-    if(!month) throw new Error('Válassz hónapot a Szűrők között.');
-
-    // Az aktuális entries tömbből dolgozunk (real-time snapshot alapján)
-    const monthEntries = entries
-      .filter(e => (e.monthKey ? e.monthKey===month : monthKey(e.date)===month))
-      // rendezés: dátum növekvő, majd createdAt (ha van), majd id
-      .sort((a,b)=>{
-        const ad = new Date(a.date||'1970-01-01').getTime();
-        const bd = new Date(b.date||'1970-01-01').getTime();
-        if(ad!==bd) return ad-bd;
-        const ac = a.createdAt || 0, bc = b.createdAt || 0;
-        if(ac!==bc) return ac-bc;
-        return (a.id||'').localeCompare(b.id||'');
-      });
-
-    let seq = 0;
-    const ops = [];
-
-    for(const e of monthEntries){
-      if(onlyMissing && typeof e.seq === 'number') continue;
-      seq += 1;
-      const patch = { seq, monthKey: month };
-      // biztos ami biztos: saját számítások frissítése, ha nem volt mentve
-      const pct = (e.pctAtSave != null) ? e.pctAtSave : pctFor(e.workplace);
-      const own = (e.ownAtSave != null) ? e.ownAtSave : Math.round((+e.amount||0) * pct);
-      if(e.pctAtSave == null) patch.pctAtSave = pct;
-      if(e.ownAtSave == null) patch.ownAtSave = own;
-
-      ops.push(updateDoc(doc(db,'users',uid,'entries',e.id), patch).catch(()=>{}));
-    }
-
-    // Ha onlyMissing és mindennek volt seq, akkor is frissítsük a számlálót a max meglévőre
-    if(onlyMissing && seq===0){
-      // keresd meg a hónapban a legnagyobb meglévő seq-et
-      const maxExisting = monthEntries.reduce((m,e)=> (typeof e.seq==='number' && e.seq>m)?e.seq:m, 0);
-      seq = maxExisting;
-    }
-
-    if(ops.length) await Promise.all(ops);
-
-    // számláló frissítése a hónap végső max értékére
-    const counterRef = doc(db,'users',uid,'counters',month);
-    await runTransaction(db, async (tx)=>{
-      const snap = await tx.get(counterRef);
-      const cur = snap.exists() ? (snap.data().lastSeq||0) : 0;
-      const target = Math.max(cur, seq);
-      tx.set(counterRef, { lastSeq: target }, { merge:true });
-    });
-
-    return { processed: ops.length, finalSeq: seq };
-  }
-
-  migrateBtn?.addEventListener('click', async ()=>{
-    migrateMsg.textContent = '';
-    try{
-      const m = filterMonth.value;
-      if(!m){ migrateMsg.textContent = 'Válassz hónapot a migráláshoz.'; return; }
-      showLoader();
-      const onlyMissing = !!migrateOnlyMissing.checked;
-      const res = await migrateMonthSeq(m, onlyMissing);
-      migrateMsg.textContent = `Kész. Módosított bejegyzések: ${res.processed}. Utolsó sorszám: ${res.finalSeq}.`;
-    }catch(err){
-      migrateMsg.textContent = err?.message || 'Migrálási hiba történt.';
-    }finally{
-      hideLoader();
-    }
-  });
 
   saveEdit.onclick = async ()=>{
     if(!editingId) return;
@@ -542,7 +483,7 @@
       };
       if(newMonthKey !== editingOriginalMonthKey){
         const newSeq = await nextMonthlySeq(uid, newMonthKey);
-        patch.seq = newSeq;
+        patch.seq = newSeq; // új hónapban kap új sorszámot, a régi hónap nem rendeződik át
       }
       await updateDoc(doc(db,'users',uid,'entries',editingId), patch);
       editMsg.classList.remove('hide');
@@ -553,6 +494,7 @@
       editErr.classList.remove('hide');
     }
   };
+
 </script>
 </body>
 </html>
