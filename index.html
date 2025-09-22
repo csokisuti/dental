@@ -308,6 +308,60 @@
     return seq;
   }
 
+  // --- ÚJ: Segédfüggvény – beavatkozások szétvágása vessző szerint
+  function splitProcedures(text){
+    return (text||'')
+      .split(',')
+      .map(s=>s.trim())
+      .filter(Boolean);
+  }
+
+  // --- ÚJ: Ha új beavatkozás(oka)t írt be, ajánljuk fel a gyorslistához adást
+  async function maybeAddNewProceduresToSettings(procText){
+    const items = splitProcedures(procText);
+    const slot = currentSlot();
+    const existing = (settings.proceduresByPlace?.[slot]) || [];
+    const missing = items.filter(x => !existing.includes(x));
+    if(missing.length===0) return false;
+
+    const placeName = slot==='w1' ? (settings.w1name||'Hely1') : (settings.w2name||'Hely2');
+    const ok = confirm(
+      `A következő új beavatkozás(ok) nincsenek a(z) "${placeName}" gyorslistájában:\n\n`+
+      missing.map(m=>`• ${m}`).join('\n')+
+      `\n\nHozzáadjam most?`
+    );
+    if(!ok) return false;
+
+    const updatedSlotList = Array.from(new Set([...existing, ...missing])).slice(0,100);
+    const mergedProcedures =
+      Array.from(new Set([
+        ...(settings.proceduresByPlace?.w1||[]),
+        ...(settings.proceduresByPlace?.w2||[]),
+        ...missing
+      ])).slice(0,200);
+
+    await setDoc(
+      doc(db,'users',currentUID,'meta','settings'),
+      {
+        proceduresByPlace: {
+          ...(settings.proceduresByPlace||{w1:[],w2:[]}),
+          [slot]: updatedSlotList
+        },
+        // kompat mező
+        procedures: mergedProcedures
+      },
+      { merge:true }
+    );
+
+    // helyi állapot + UI frissítés
+    settings.proceduresByPlace = {
+      ...(settings.proceduresByPlace||{w1:[],w2:[]}),
+      [slot]: updatedSlotList
+    };
+    renderQuickProcedures();
+    return true;
+  }
+
   saveBtn.onclick = async ()=>{
     saveOk.classList.add('hide'); saveErr.classList.add('hide'); saveErr.textContent = '';
     const payload = {
@@ -328,6 +382,9 @@
 
     saveBtn.disabled = true;
     try{
+      // --- ÚJ: mentés előtt felajánljuk a hiányzók gyorslistához adását
+      await maybeAddNewProceduresToSettings(payload.procedure);
+
       const seq = await nextMonthlySeq(currentUID, mKey);
       await addDoc(collection(db,'users',currentUID,'entries'), { ...payload, monthKey: mKey, seq });
       localStorage.setItem(lastKey(), payload.workplace);
