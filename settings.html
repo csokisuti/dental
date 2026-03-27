@@ -3,108 +3,78 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-
 <link rel="apple-touch-icon" href="dent.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Bevételkövető">
 <meta name="theme-color" content="#2563eb">
-
 <title>Beállítások – Fogorvosi bevételkövető</title>
 <style>
   :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--shadow:0 6px 25px rgba(15,23,42,.08)}
   *{box-sizing:border-box}
   html,body{height:100%}
   html{-webkit-text-size-adjust:100%}
-  body{
-    margin:0;background:var(--bg);color:var(--text);
-    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
-    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right)
-             env(safe-area-inset-bottom) env(safe-area-inset-left);
-  }
-  .layout{max-width:800px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  .layout{max-width:900px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
   h1{margin:0 0 6px;font-size:20px}
   h2{margin:0 0 10px;font-size:16px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-  input,.row input,.row select{
+  input,.row input,.row select,.row3 input,.row3 select,textarea{
     width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;
     font-size:16px;appearance:none;-webkit-appearance:none;
   }
-  .row select{
-    background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%),
-                      linear-gradient(135deg, #94a3b8 50%, transparent 50%),
-                      linear-gradient(to right, transparent, transparent);
-    background-position: calc(100% - 16px) 50%, calc(100% - 12px) 50%, 0 0;
-    background-size: 6px 6px, 6px 6px, 100% 100%;
-    background-repeat: no-repeat;
-    padding-right:36px;
+  .row select,.row3 select{
+    background-image:linear-gradient(45deg,transparent 50%,#94a3b8 50%),linear-gradient(135deg,#94a3b8 50%,transparent 50%),linear-gradient(to right,transparent,transparent);
+    background-position:calc(100% - 16px) 50%,calc(100% - 12px) 50%,0 0;
+    background-size:6px 6px,6px 6px,100% 100%;background-repeat:no-repeat;padding-right:36px;
   }
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
   .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .btn{
-    display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 14px;border:1px solid var(--line);
-    border-radius:10px;background:#fff;cursor:pointer;text-decoration:none;color:inherit;
-    font-size:16px;min-height:44px;touch-action:manipulation;text-align:center;
-  }
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;text-decoration:none;color:inherit;font-size:16px;min-height:44px;touch-action:manipulation;text-align:center}
   .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
   .muted{color:var(--muted);font-size:12px}
   .pill{display:inline-block;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-weight:600}
   .hide{display:none !important}
   .ok{padding:10px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
   .err{padding:10px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
-
-  /* Gyors beavatkozások szerkesztése */
   .chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-  .chip{
-    display:inline-flex;align-items:center;gap:8px;
-    padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;font-weight:600;
-    user-select:none
-  }
+  .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;font-weight:600;user-select:none}
   .chip .mini{font-size:12px;opacity:.8;cursor:pointer}
   .chip .mini:hover{opacity:1;text-decoration:underline}
   .chip .drag{cursor:grab;opacity:.7}
   .chip.dragging{opacity:.5}
   .chip .mv{display:inline-flex;gap:4px}
   .chip .mv button{padding:2px 8px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:12px}
-
-  /* Hely-választó (Hely1 / Hely2) */
-  .place-switch{
-    display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;
-  }
-  .place-switch button{
-    padding:8px 12px;border:0;background:#fff;cursor:pointer;font-weight:700
-  }
-  .place-switch button.active{
-    background:var(--primary);color:#fff
-  }
-
-  /* Loader */
-  .loader{
-    position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:var(--bg);z-index:9999;transition:opacity .25s ease;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right)
-             env(safe-area-inset-bottom) env(safe-area-inset-left);
-  }
+  .place-switch{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .place-switch button{padding:8px 12px;border:0;background:#fff;cursor:pointer;font-weight:700}
+  .place-switch button.active{background:var(--primary);color:#fff}
+  .loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;transition:opacity .25s ease;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
   .loader.hide{opacity:0;pointer-events:none}
   .loader-inner{display:flex;flex-direction:column;align-items:center;gap:12px}
   .tooth{width:64px;height:64px}
   .loader-text{color:var(--muted);font-weight:600}
-
+  .section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .item-list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+  .item-row{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+  .item-grid{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(2,minmax(110px,.8fr)) auto;gap:10px;align-items:end}
+  .item-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .item-actions button{padding:10px 12px;min-height:40px}
+  .empty{padding:12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);text-align:center}
   .nav .btn{min-width:0}
-  @media (max-width:640px){
+  @media (max-width:760px){
     .layout{padding:16px}
-    .row{grid-template-columns:1fr}
-    .row3{grid-template-columns:1fr}
+    .row,.row3,.item-grid{grid-template-columns:1fr}
     .place-switch{width:100%}
     .place-switch button{flex:1}
     .topbar{flex-direction:column;align-items:stretch}
     .topbar h1{margin-bottom:0}
     .nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
     .nav .btn{width:100%;font-size:15px;padding:12px 10px}
+    .item-actions{justify-content:stretch}
+    .item-actions button{flex:1}
   }
 </style>
 </head>
@@ -128,7 +98,7 @@
       <a class="btn" href="index.html">📝 Rögzítés</a>
       <a class="btn" href="income.html">💰 Bevételek</a>
       <a class="btn" href="meds.html">💊 Gyógyszer kalkulátor</a>
-      <a class="btn link" href="stats.html">📊 Statisztika</a>
+      <a class="btn" href="stats.html">📊 Statisztika</a>
       <button class="btn" id="logoutBtn">🚪 Kijelentkezés</button>
     </div>
   </div>
@@ -197,7 +167,7 @@
     <h2>Gyors beavatkozások</h2>
 
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-      <div class="place-switch" id="placeSwitch">
+      <div class="place-switch">
         <button type="button" id="tabW1" class="active">Hely1</button>
         <button type="button" id="tabW2">Hely2</button>
       </div>
@@ -215,10 +185,39 @@
         <button class="btn" id="procCancelEditBtn" style="display:none">Mégse</button>
       </div>
     </div>
-    <div class="muted" style="margin-top:6px">
-      Tipp: vesszővel elválasztva több elemet is hozzáadhatsz egyszerre. Fogd-és-vidd módszerrel vagy a ◀︎/▶︎ nyilakkal módosíthatod a sorrendet.
-    </div>
+    <div class="muted" style="margin-top:6px">Tipp: vesszővel elválasztva több elemet is hozzáadhatsz egyszerre. Fogd-és-vidd módszerrel vagy a ◀︎/▶︎ nyilakkal módosíthatod a sorrendet.</div>
     <div id="procList" class="chip-list"></div>
+
+    <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+
+    <div class="section-head">
+      <h2>Technikai árlista / eladási árlista</h2>
+      <span class="muted">Munkahelyenként külön tételek. Ezeket használja majd az index oldali kalkulátor.</span>
+    </div>
+
+    <div class="row3" style="margin-top:10px">
+      <div>
+        <label>Tétel neve</label>
+        <input id="itemName" placeholder="Pl. cirkon korona">
+      </div>
+      <div>
+        <label>Eladási ár (HUF)</label>
+        <input id="itemSell" type="number" min="0" step="1" inputmode="numeric" placeholder="50000">
+      </div>
+      <div>
+        <label>Technikai ár (HUF)</label>
+        <input id="itemTech" type="number" min="0" step="1" inputmode="numeric" placeholder="20000">
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn" id="itemAddBtn">Tétel hozzáadása</button>
+      <button class="btn" id="itemSaveEditBtn" style="display:none">Tétel szerkesztés mentése</button>
+      <button class="btn" id="itemCancelEditBtn" style="display:none">Mégse</button>
+      <span class="muted">Az árak alapértékek. A kalkulátorban később soronként átírhatók.</span>
+    </div>
+
+    <div id="itemList" class="item-list"></div>
 
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap">
       <button class="btn primary" id="saveBtn">Beállítások mentése</button>
@@ -259,11 +258,11 @@
   const authMsg = document.getElementById('authMsg');
 
   const w1name = document.getElementById('w1name');
-  const w1pct  = document.getElementById('w1pct');
-  const w1color= document.getElementById('w1color');
+  const w1pct = document.getElementById('w1pct');
+  const w1color = document.getElementById('w1color');
   const w2name = document.getElementById('w2name');
-  const w2pct  = document.getElementById('w2pct');
-  const w2color= document.getElementById('w2color');
+  const w2pct = document.getElementById('w2pct');
+  const w2color = document.getElementById('w2color');
   const p1 = document.getElementById('p1');
   const p2 = document.getElementById('p2');
   const saveBtn = document.getElementById('saveBtn');
@@ -276,39 +275,73 @@
   const procCancelEditBtn = document.getElementById('procCancelEditBtn');
   const procList = document.getElementById('procList');
 
+  const itemName = document.getElementById('itemName');
+  const itemSell = document.getElementById('itemSell');
+  const itemTech = document.getElementById('itemTech');
+  const itemAddBtn = document.getElementById('itemAddBtn');
+  const itemSaveEditBtn = document.getElementById('itemSaveEditBtn');
+  const itemCancelEditBtn = document.getElementById('itemCancelEditBtn');
+  const itemList = document.getElementById('itemList');
+
   const tabW1 = document.getElementById('tabW1');
   const tabW2 = document.getElementById('tabW2');
 
   let uid = null;
   let procsByPlace = { w1: [], w2: [] };
+  let itemsByPlace = { w1: [], w2: [] };
   let editingIndex = -1;
+  let editingItemIndex = -1;
   let dragIndex = -1;
   let activeSlot = 'w1';
+
+  const safeMoney = v => Math.max(0, Math.round(+v || 0));
+  const createItemId = () => `${Date.now()}_${Math.random().toString(36).slice(2,10)}`;
 
   const applyPreview = ()=>{
     tabW1.textContent = w1name.value?.trim() || 'Hely1';
     tabW2.textContent = w2name.value?.trim() || 'Hely2';
-
     p1.textContent = w1name.value?.trim() || 'Hely1';
-    p1.style.background = w1color.value || '#2563eb'; p1.style.color = '#fff';
-
+    p1.style.background = w1color.value || '#2563eb';
+    p1.style.color = '#fff';
     p2.textContent = w2name.value?.trim() || 'Hely2';
-    p2.style.background = w2color.value || '#16a34a'; p2.style.color = '#fff';
+    p2.style.background = w2color.value || '#16a34a';
+    p2.style.color = '#fff';
   };
   [w1name,w2name,w1color,w2color].forEach(el=>el.addEventListener('input', applyPreview));
 
-  function setActive(slot){
-    activeSlot = slot;
-    if(slot==='w1'){ tabW1.classList.add('active'); tabW2.classList.remove('active'); }
-    else { tabW1.classList.remove('active'); tabW2.classList.add('active'); }
-    // szerkesztési mód törlése váltáskor
+  function resetProcEditor(){
     editingIndex = -1;
     procInput.value = '';
     procAddBtn.style.display='';
     procSaveEditBtn.style.display='none';
     procCancelEditBtn.style.display='none';
-    renderProcedures();
   }
+
+  function resetItemEditor(){
+    editingItemIndex = -1;
+    itemName.value = '';
+    itemSell.value = '';
+    itemTech.value = '';
+    itemAddBtn.style.display='';
+    itemSaveEditBtn.style.display='none';
+    itemCancelEditBtn.style.display='none';
+  }
+
+  function setActive(slot){
+    activeSlot = slot;
+    if(slot==='w1'){
+      tabW1.classList.add('active');
+      tabW2.classList.remove('active');
+    } else {
+      tabW1.classList.remove('active');
+      tabW2.classList.add('active');
+    }
+    resetProcEditor();
+    resetItemEditor();
+    renderProcedures();
+    renderItems();
+  }
+
   tabW1.onclick = ()=> setActive('w1');
   tabW2.onclick = ()=> setActive('w2');
 
@@ -338,7 +371,6 @@
       const drag = document.createElement('span');
       drag.className='mini drag';
       drag.textContent='⠿';
-      drag.title='Fogd meg és húzd új helyre';
 
       const text = document.createElement('span');
       text.textContent = name;
@@ -346,16 +378,20 @@
       const mv = document.createElement('span');
       mv.className='mv';
       const left = document.createElement('button');
-      left.type='button'; left.textContent='◀︎'; left.title='Balra';
+      left.type='button';
+      left.textContent='◀︎';
       left.onclick = ()=>{ moveItem(list, idx, Math.max(0,idx-1)); renderProcedures(); };
 
       const right = document.createElement('button');
-      right.type='button'; right.textContent='▶︎'; right.title='Jobbra';
+      right.type='button';
+      right.textContent='▶︎';
       right.onclick = ()=>{ moveItem(list, idx, Math.min(list.length-1,idx+1)); renderProcedures(); };
-      mv.appendChild(left); mv.appendChild(right);
+      mv.appendChild(left);
+      mv.appendChild(right);
 
       const edit = document.createElement('span');
-      edit.className='mini'; edit.textContent='✎'; edit.title='Szerkesztés';
+      edit.className='mini';
+      edit.textContent='✎';
       edit.onclick = ()=>{
         editingIndex = idx;
         procInput.value = name;
@@ -366,7 +402,8 @@
       };
 
       const del = document.createElement('span');
-      del.className='mini'; del.textContent='×'; del.title='Törlés';
+      del.className='mini';
+      del.textContent='×';
       del.onclick = ()=>{
         list.splice(idx,1);
         renderProcedures();
@@ -409,7 +446,7 @@
       if(!target.includes(item) && target.length<100) target.push(item);
     });
     procsByPlace[activeSlot] = target;
-    procInput.value='';
+    resetProcEditor();
     renderProcedures();
   }
   procAddBtn.onclick = addFromInput;
@@ -420,28 +457,142 @@
     if(val && editingIndex>=0 && editingIndex<list.length){
       list[editingIndex] = val;
       procsByPlace[activeSlot] = list;
-      editingIndex = -1;
-      procInput.value='';
-      procAddBtn.style.display='';
-      procSaveEditBtn.style.display='none';
-      procCancelEditBtn.style.display='none';
+      resetProcEditor();
       renderProcedures();
     }
   };
-  procCancelEditBtn.onclick = ()=>{
-    editingIndex = -1;
-    procInput.value='';
-    procAddBtn.style.display='';
-    procSaveEditBtn.style.display='none';
-    procCancelEditBtn.style.display='none';
+  procCancelEditBtn.onclick = resetProcEditor;
+
+  function sanitizeItems(list){
+    return (Array.isArray(list) ? list : []).map(item => ({
+      id: item?.id || createItemId(),
+      name: (item?.name || '').trim(),
+      sell: safeMoney(item?.sell),
+      tech: safeMoney(item?.tech)
+    })).filter(item => item.name).slice(0,200);
+  }
+
+  function renderItems(){
+    itemList.innerHTML = '';
+    const list = itemsByPlace[activeSlot] || [];
+    if(list.length===0){
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'Nincs még árlistás tétel ennél a helynél.';
+      itemList.appendChild(empty);
+      return;
+    }
+
+    list.forEach((item, idx)=>{
+      const row = document.createElement('div');
+      row.className = 'item-row';
+
+      const grid = document.createElement('div');
+      grid.className = 'item-grid';
+
+      const c1 = document.createElement('div');
+      c1.innerHTML = `<label>Megnevezés</label><input value="${escapeHtml(item.name)}" disabled>`;
+
+      const c2 = document.createElement('div');
+      c2.innerHTML = `<label>Eladási ár</label><input value="${item.sell}" disabled>`;
+
+      const c3 = document.createElement('div');
+      c3.innerHTML = `<label>Technikai ár</label><input value="${item.tech}" disabled>`;
+
+      const c4 = document.createElement('div');
+      c4.className = 'item-actions';
+
+      const left = document.createElement('button');
+      left.className = 'btn';
+      left.type = 'button';
+      left.textContent = '◀︎';
+      left.onclick = ()=>{ moveItem(list, idx, Math.max(0, idx-1)); renderItems(); };
+
+      const right = document.createElement('button');
+      right.className = 'btn';
+      right.type = 'button';
+      right.textContent = '▶︎';
+      right.onclick = ()=>{ moveItem(list, idx, Math.min(list.length-1, idx+1)); renderItems(); };
+
+      const edit = document.createElement('button');
+      edit.className = 'btn';
+      edit.type = 'button';
+      edit.textContent = 'Szerkeszt';
+      edit.onclick = ()=>{
+        editingItemIndex = idx;
+        itemName.value = item.name;
+        itemSell.value = item.sell;
+        itemTech.value = item.tech;
+        itemAddBtn.style.display='none';
+        itemSaveEditBtn.style.display='';
+        itemCancelEditBtn.style.display='';
+        itemName.focus();
+      };
+
+      const del = document.createElement('button');
+      del.className = 'btn';
+      del.type = 'button';
+      del.textContent = 'Törlés';
+      del.onclick = ()=>{
+        list.splice(idx,1);
+        renderItems();
+      };
+
+      c4.appendChild(left);
+      c4.appendChild(right);
+      c4.appendChild(edit);
+      c4.appendChild(del);
+
+      grid.appendChild(c1);
+      grid.appendChild(c2);
+      grid.appendChild(c3);
+      grid.appendChild(c4);
+      row.appendChild(grid);
+      itemList.appendChild(row);
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+
+  itemAddBtn.onclick = ()=>{
+    const name = (itemName.value || '').trim();
+    const sell = safeMoney(itemSell.value);
+    const tech = safeMoney(itemTech.value);
+    if(!name) return;
+    const target = itemsByPlace[activeSlot] || [];
+    target.push({ id:createItemId(), name, sell, tech });
+    itemsByPlace[activeSlot] = sanitizeItems(target);
+    resetItemEditor();
+    renderItems();
   };
+
+  itemSaveEditBtn.onclick = ()=>{
+    const list = itemsByPlace[activeSlot] || [];
+    if(editingItemIndex<0 || editingItemIndex>=list.length) return;
+    const name = (itemName.value || '').trim();
+    if(!name) return;
+    list[editingItemIndex] = {
+      ...list[editingItemIndex],
+      name,
+      sell: safeMoney(itemSell.value),
+      tech: safeMoney(itemTech.value)
+    };
+    itemsByPlace[activeSlot] = sanitizeItems(list);
+    resetItemEditor();
+    renderItems();
+  };
+
+  itemCancelEditBtn.onclick = resetItemEditor;
 
   onAuthStateChanged(auth, async user=>{
     if(!user){
       authCard.classList.remove('hide');
       content.classList.add('hide');
       hideLoader();
-      uid=null; return;
+      uid = null;
+      return;
     }
     uid = user.uid;
     authCard.classList.add('hide');
@@ -454,37 +605,70 @@
         w1name:'Hely1', w1pct:0.30, w1color:'#2563eb',
         w2name:'Hely2', w2pct:0.40, w2color:'#16a34a',
         proceduresByPlace:{ w1:[], w2:[] },
-        procedures:[]
+        procedures:[],
+        itemsByPlace:{ w1:[], w2:[] }
       });
     }
+
     const s = (await getDoc(sRef)).data() || {};
     w1name.value = s.w1name ?? 'Hely1';
-    w1pct.value  = s.w1pct ?? 0.30;
-    w1color.value= s.w1color ?? '#2563eb';
+    w1pct.value = s.w1pct ?? 0.30;
+    w1color.value = s.w1color ?? '#2563eb';
     w2name.value = s.w2name ?? 'Hely2';
-    w2pct.value  = s.w2pct ?? 0.40;
-    w2color.value= s.w2color ?? '#16a34a';
+    w2pct.value = s.w2pct ?? 0.40;
+    w2color.value = s.w2color ?? '#16a34a';
 
-    // visszafelé kompatibilitás: ha nincs proceduresByPlace, örököljön a legacy 'procedures' listából
-    const legacy = Array.isArray(s.procedures)? s.procedures : [];
+    const legacy = Array.isArray(s.procedures) ? s.procedures : [];
     const pbp = (s.proceduresByPlace && typeof s.proceduresByPlace==='object')
-      ? { w1: Array.isArray(s.proceduresByPlace.w1)? s.proceduresByPlace.w1 : [],
-          w2: Array.isArray(s.proceduresByPlace.w2)? s.proceduresByPlace.w2 : [] }
+      ? {
+          w1: Array.isArray(s.proceduresByPlace.w1) ? s.proceduresByPlace.w1 : [],
+          w2: Array.isArray(s.proceduresByPlace.w2) ? s.proceduresByPlace.w2 : []
+        }
       : { w1: legacy, w2: legacy };
 
+    const ibp = (s.itemsByPlace && typeof s.itemsByPlace==='object')
+      ? {
+          w1: sanitizeItems(s.itemsByPlace.w1),
+          w2: sanitizeItems(s.itemsByPlace.w2)
+        }
+      : { w1: [], w2: [] };
+
     procsByPlace = { w1:[...pbp.w1].slice(0,100), w2:[...pbp.w2].slice(0,100) };
+    itemsByPlace = ibp;
 
     applyPreview();
-    setActive('w1'); // render is hívódik
+    setActive('w1');
     hideLoader();
   });
 
-  loginBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await signInWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); showLoader(); }catch(e){ authMsg.textContent = e.message; } };
-  registerBtn.onclick = async ()=>{ authMsg.textContent=''; try{ await createUserWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value); showLoader(); }catch(e){ authMsg.textContent = e.message; } };
-  logoutBtn.onclick = ()=>{ showLoader(); signOut(auth); };
+  loginBtn.onclick = async ()=>{
+    authMsg.textContent='';
+    try{
+      await signInWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value);
+      showLoader();
+    }catch(e){
+      authMsg.textContent = e.message;
+    }
+  };
+
+  registerBtn.onclick = async ()=>{
+    authMsg.textContent='';
+    try{
+      await createUserWithEmailAndPassword(auth,emailEl.value.trim(),passEl.value);
+      showLoader();
+    }catch(e){
+      authMsg.textContent = e.message;
+    }
+  };
+
+  logoutBtn.onclick = ()=>{
+    showLoader();
+    signOut(auth);
+  };
 
   saveBtn.onclick = async ()=>{
-    msgOk.classList.add('hide'); msgErr.classList.add('hide');
+    msgOk.classList.add('hide');
+    msgErr.classList.add('hide');
     try{
       const data = {
         w1name: (w1name.value||'Hely1').trim(),
@@ -497,8 +681,11 @@
           w1: (procsByPlace.w1||[]).slice(0,100),
           w2: (procsByPlace.w2||[]).slice(0,100)
         },
-        // kompat: írunk egy egyesített 'procedures' mezőt is
-        procedures: Array.from(new Set([...(procsByPlace.w1||[]), ...(procsByPlace.w2||[])])).slice(0,200)
+        procedures: Array.from(new Set([...(procsByPlace.w1||[]), ...(procsByPlace.w2||[])])).slice(0,200),
+        itemsByPlace: {
+          w1: sanitizeItems(itemsByPlace.w1),
+          w2: sanitizeItems(itemsByPlace.w2)
+        }
       };
       await setDoc(doc(db,'users',uid,'meta','settings'), data, {merge:true});
       msgOk.classList.remove('hide');
@@ -511,4 +698,3 @@
 </script>
 </body>
 </html>
-
