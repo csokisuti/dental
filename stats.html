@@ -174,12 +174,12 @@
       <div class="ktable">
         <table>
           <thead>
-            <tr><th>Beavatkozás</th><th class="right">Darab</th><th class="right">Bevétel</th><th class="right">Saját rész</th></tr>
+            <tr><th>Beavatkozás</th><th class="right">Darab</th><th class="right">Páciens fizette</th><th class="right">Jutalékalap</th><th class="right">Saját rész</th></tr>
           </thead>
           <tbody id="procTbody"></tbody>
         </table>
       </div>
-      <div class="muted" style="margin-top:6px">Megjegyzés: több beavatkozásnál a beírt listát elemenként külön számolja (vesszőnként), és az összegeket arányosan osztja el.</div>
+      <div class="muted" style="margin-top:6px">Megjegyzés: több beavatkozásnál a beírt listát elemenként külön számolja (vesszőnként), és a páciens fizette / jutalékalap / saját rész összegeket arányosan osztja el.</div>
     </div>
   </div>
 </div>
@@ -436,22 +436,26 @@
 
   // ----- Beavatkozás statisztika (top 20) -----
   function renderProcedureStats(allEntries){
-    const agg = new Map(); // key: lc name -> {display,count,gross,own}
+    const agg = new Map(); // key: lc name -> {display,count,gross,base,own}
     for(const e of allEntries){
       const parts = splitProcedures(e.procedure||'');
       const pct = (e.pctAtSave!=null) ? e.pctAtSave : pctFor(e.workplace);
       const own = (e.ownAtSave!=null) ? e.ownAtSave : Math.round((+e.amount||0)*pct);
+      const grossAmount = +e.grossAmount || +e.amount || 0;
+      const baseAmount = +e.amount || 0;
 
       const n = Math.max(1, parts.length);
-      const shareGross = Math.round((+e.amount||0) / n);
+      const shareGross = Math.round(grossAmount / n);
+      const shareBase  = Math.round(baseAmount / n);
       const shareOwn   = Math.round((own||0) / n);
 
       for(const p of parts){
         const key = p.toLocaleLowerCase('hu-HU');
-        const rec = agg.get(key) || {display:p, count:0, gross:0, own:0};
+        const rec = agg.get(key) || {display:p, count:0, gross:0, base:0, own:0};
         if(rec.count===0) rec.display = p;
         rec.count += 1;
         rec.gross += shareGross;
+        rec.base  += shareBase;
         rec.own   += shareOwn;
         agg.set(key, rec);
       }
@@ -463,7 +467,7 @@
     procTbody.innerHTML = '';
     for(const r of rows){
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${r.display}</td><td class="right">${r.count}</td><td class="right">${fmt(r.gross)} Ft</td><td class="right">${fmt(r.own)} Ft</td>`;
+      tr.innerHTML = `<td>${r.display}</td><td class="right">${r.count}</td><td class="right">${fmt(r.gross)} Ft</td><td class="right">${fmt(r.base)} Ft</td><td class="right">${fmt(r.own)} Ft</td>`;
       procTbody.appendChild(tr);
     }
   }
