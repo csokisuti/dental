@@ -59,7 +59,7 @@
   .section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
   .item-list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
   .item-row{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
-  .item-grid{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(2,minmax(110px,.8fr)) auto;gap:10px;align-items:end}
+  .item-grid{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(110px,.8fr)) auto;gap:10px;align-items:end}
   .item-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
   .item-actions button{padding:10px 12px;min-height:40px}
   .empty{padding:12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);text-align:center}
@@ -210,6 +210,13 @@
       </div>
     </div>
 
+    <div style="margin-top:10px">
+      <label style="display:flex;align-items:center;gap:10px;color:var(--text);font-size:14px">
+        <input id="itemNoCommission" type="checkbox" style="width:auto;min-width:18px;height:18px;padding:0;appearance:auto;-webkit-appearance:checkbox">
+        Nem jutalékos tétel (100% a helyé, nem számít bele a jutalékalapba)
+      </label>
+    </div>
+
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px">
       <button class="btn" id="itemAddBtn">Tétel hozzáadása</button>
       <button class="btn" id="itemSaveEditBtn" style="display:none">Tétel szerkesztés mentése</button>
@@ -278,6 +285,7 @@
   const itemName = document.getElementById('itemName');
   const itemSell = document.getElementById('itemSell');
   const itemTech = document.getElementById('itemTech');
+  const itemNoCommission = document.getElementById('itemNoCommission');
   const itemAddBtn = document.getElementById('itemAddBtn');
   const itemSaveEditBtn = document.getElementById('itemSaveEditBtn');
   const itemCancelEditBtn = document.getElementById('itemCancelEditBtn');
@@ -322,6 +330,7 @@
     itemName.value = '';
     itemSell.value = '';
     itemTech.value = '';
+    itemNoCommission.checked = false;
     itemAddBtn.style.display='';
     itemSaveEditBtn.style.display='none';
     itemCancelEditBtn.style.display='none';
@@ -468,7 +477,8 @@
       id: item?.id || createItemId(),
       name: (item?.name || '').trim(),
       sell: safeMoney(item?.sell),
-      tech: safeMoney(item?.tech)
+      tech: safeMoney(item?.tech),
+      noCommission: !!item?.noCommission
     })).filter(item => item.name).slice(0,200);
   }
 
@@ -500,7 +510,10 @@
       c3.innerHTML = `<label>Technikai ár</label><input value="${item.tech}" disabled>`;
 
       const c4 = document.createElement('div');
-      c4.className = 'item-actions';
+      c4.innerHTML = `<label>Jutalék</label><input value="${item.noCommission ? 'Nem jutalékos' : 'Jutalékos'}" disabled>`;
+
+      const c5 = document.createElement('div');
+      c5.className = 'item-actions';
 
       const left = document.createElement('button');
       left.className = 'btn';
@@ -523,6 +536,7 @@
         itemName.value = item.name;
         itemSell.value = item.sell;
         itemTech.value = item.tech;
+        itemNoCommission.checked = !!item.noCommission;
         itemAddBtn.style.display='none';
         itemSaveEditBtn.style.display='';
         itemCancelEditBtn.style.display='';
@@ -538,15 +552,16 @@
         renderItems();
       };
 
-      c4.appendChild(left);
-      c4.appendChild(right);
-      c4.appendChild(edit);
-      c4.appendChild(del);
+      c5.appendChild(left);
+      c5.appendChild(right);
+      c5.appendChild(edit);
+      c5.appendChild(del);
 
       grid.appendChild(c1);
       grid.appendChild(c2);
       grid.appendChild(c3);
       grid.appendChild(c4);
+      grid.appendChild(c5);
       row.appendChild(grid);
       itemList.appendChild(row);
     });
@@ -560,9 +575,10 @@
     const name = (itemName.value || '').trim();
     const sell = safeMoney(itemSell.value);
     const tech = safeMoney(itemTech.value);
+    const noCommission = !!itemNoCommission.checked;
     if(!name) return;
     const target = itemsByPlace[activeSlot] || [];
-    target.push({ id:createItemId(), name, sell, tech });
+    target.push({ id:createItemId(), name, sell, tech, noCommission });
     itemsByPlace[activeSlot] = sanitizeItems(target);
     resetItemEditor();
     renderItems();
@@ -577,7 +593,8 @@
       ...list[editingItemIndex],
       name,
       sell: safeMoney(itemSell.value),
-      tech: safeMoney(itemTech.value)
+      tech: safeMoney(itemTech.value),
+      noCommission: !!itemNoCommission.checked
     };
     itemsByPlace[activeSlot] = sanitizeItems(list);
     resetItemEditor();
