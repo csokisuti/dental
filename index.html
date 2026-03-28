@@ -50,7 +50,7 @@
   .calc-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
   .calc-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
   .calc-row{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
-  .calc-grid{display:grid;grid-template-columns:minmax(0,1.3fr) .7fr .8fr .8fr auto;gap:10px;align-items:end}
+  .calc-grid{display:grid;grid-template-columns:minmax(0,1.2fr) .6fr .8fr .8fr 1fr auto;gap:10px;align-items:end}
   .calc-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
   .calc-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
   .summary-box{border:1px solid var(--line);border-radius:12px;padding:12px;background:#f8fafc}
@@ -177,7 +177,7 @@
           <strong id="calcTechTotal">0 Ft</strong>
         </div>
         <div class="summary-box">
-          <span class="muted">Számolt nettó alap</span>
+          <span class="muted">Számolt jutalékalap</span>
           <strong id="calcNetTotal">0 Ft</strong>
         </div>
       </div>
@@ -350,7 +350,8 @@
       id: item?.id || createCalcId(),
       name: (item?.name || '').trim(),
       sell: safeMoney(item?.sell),
-      tech: safeMoney(item?.tech)
+      tech: safeMoney(item?.tech),
+      noCommission: !!item?.noCommission
     })).filter(item => item.name).slice(0,200);
   }
 
@@ -369,7 +370,7 @@
     items.forEach(item=>{
       const opt = document.createElement('option');
       opt.value = item.id;
-      opt.textContent = `${item.name} — ${formatHuf(item.sell)} / tech: ${formatHuf(item.tech)}`;
+      opt.textContent = `${item.name} — ${formatHuf(item.sell)} / tech: ${formatHuf(item.tech)}${item.noCommission ? ' · nem jutalékos' : ''}`;
       calcItemSelect.appendChild(opt);
     });
     calcAddBtn.disabled = false;
@@ -396,7 +397,7 @@
       grid.className = 'calc-grid';
 
       const c1 = document.createElement('div');
-      c1.innerHTML = `<label>Tétel</label><input value="${escapeHtml(entry.name)}" data-field="name" data-id="${entry.id}">`;
+      c1.innerHTML = `<label>Tétel</label><input value="${escapeHtml(entry.name)}" data-field="name" data-id="${entry.id}"><div class="muted" style="margin-top:6px">${entry.noCommission ? 'Nem jutalékos tétel' : 'Jutalékos tétel'}</div>`;
 
       const c2 = document.createElement('div');
       c2.innerHTML = `<label>Db</label><input type="number" min="1" step="1" inputmode="numeric" value="${entry.qty}" data-field="qty" data-id="${entry.id}">`;
@@ -408,12 +409,16 @@
       c4.innerHTML = `<label>Technikai ár / db</label><input type="number" min="0" step="1" inputmode="numeric" value="${entry.tech}" data-field="tech" data-id="${entry.id}">`;
 
       const c5 = document.createElement('div');
-      c5.className = 'calc-actions';
+      c5.innerHTML = `<label style="display:flex;align-items:center;gap:10px;color:var(--text);font-size:14px"><input type="checkbox" data-field="noCommission" data-id="${entry.id}" ${entry.noCommission ? 'checked' : ''} style="width:auto;min-width:18px;height:18px;padding:0;appearance:auto;-webkit-appearance:checkbox"> Nem jutalékos</label>`;
+
+      const c6 = document.createElement('div');
+      c6.className = 'calc-actions';
+      const rowBase = entry.noCommission ? 0 : Math.max(0, (entry.sell * entry.qty) - (entry.tech * entry.qty));
       const subtotal = document.createElement('div');
       subtotal.className = 'muted';
       subtotal.style.width = '100%';
       subtotal.style.textAlign = 'right';
-      subtotal.textContent = `Sor nettó: ${formatHuf((entry.sell * entry.qty) - (entry.tech * entry.qty))}`;
+      subtotal.textContent = `Sor jutalékalap: ${formatHuf(rowBase)}`;
       const del = document.createElement('button');
       del.className = 'btn';
       del.type = 'button';
@@ -422,14 +427,15 @@
         calcEntries = calcEntries.filter(x => x.id !== entry.id);
         renderCalculator();
       };
-      c5.appendChild(subtotal);
-      c5.appendChild(del);
+      c6.appendChild(subtotal);
+      c6.appendChild(del);
 
       grid.appendChild(c1);
       grid.appendChild(c2);
       grid.appendChild(c3);
       grid.appendChild(c4);
       grid.appendChild(c5);
+      grid.appendChild(c6);
       row.appendChild(grid);
       calcRows.appendChild(row);
     });
@@ -444,19 +450,45 @@
         if(field === 'qty') entry.qty = safeQty(e.target.value);
         if(field === 'sell') entry.sell = safeMoney(e.target.value);
         if(field === 'tech') entry.tech = safeMoney(e.target.value);
+        if(field === 'noCommission') entry.noCommission = !!e.target.checked;
+        renderCalculator();
+      });
+      input.addEventListener('change', e=>{
+        const id = e.target.dataset.id;
+        const field = e.target.dataset.field;
+        const entry = calcEntries.find(x => x.id === id);
+        if(!entry) return;
+        if(field === 'noCommission') entry.noCommission = !!e.target.checked;
         renderCalculator();
       });
     });
+  }
+
+  function buildCalcProcedureText(){
+    return calcEntries
+      .map(item => {
+        const qty = safeQty(item.qty);
+        const name = (item.name || '').trim();
+        if(!name) return '';
+        return `${qty} ${name}`;
+      })
+      .filter(Boolean)
+      .join(', ');
   }
 
   function renderCalculator(){
     renderCalcRows();
     const sellTotal = calcEntries.reduce((sum, item)=> sum + (safeMoney(item.sell) * safeQty(item.qty)), 0);
     const techTotal = calcEntries.reduce((sum, item)=> sum + (safeMoney(item.tech) * safeQty(item.qty)), 0);
-    const netTotal = Math.max(0, sellTotal - techTotal);
+    const netTotal = calcEntries.reduce((sum, item)=>{
+      if(item.noCommission) return sum;
+      return sum + Math.max(0, (safeMoney(item.sell) * safeQty(item.qty)) - (safeMoney(item.tech) * safeQty(item.qty)));
+    }, 0);
     calcSellTotal.textContent = formatHuf(sellTotal);
     calcTechTotal.textContent = formatHuf(techTotal);
     calcNetTotal.textContent = formatHuf(netTotal);
+    procedureEl.value = buildCalcProcedureText();
+    procedureEl.dispatchEvent(new Event('input'));
     if(!calcFinalDirty){
       calcFinalAmount.value = String(netTotal);
     }
@@ -466,6 +498,7 @@
     calcEntries = [];
     if(!keepFinalDirty) calcFinalDirty = false;
     calcQty.value = '1';
+    procedureEl.value = '';
     renderCalcItemOptions();
     renderCalculator();
   }
@@ -486,7 +519,8 @@
       name: item.name,
       qty: safeQty(calcQty.value),
       sell: safeMoney(item.sell),
-      tech: safeMoney(item.tech)
+      tech: safeMoney(item.tech),
+      noCommission: !!item.noCommission
     });
     calcQty.value = '1';
     renderCalculator();
@@ -503,6 +537,8 @@
   });
 
   calcApplyBtn.addEventListener('click', ()=>{
+    procedureEl.value = buildCalcProcedureText();
+    procedureEl.dispatchEvent(new Event('input'));
     amountEl.value = String(safeMoney(calcFinalAmount.value));
     amountEl.dispatchEvent(new Event('input'));
   });
