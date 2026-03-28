@@ -847,11 +847,17 @@
     saveErr.classList.add('hide');
     saveErr.textContent = '';
 
+    const sellTotal = calcEntries.reduce((sum, item)=> sum + getAdjustedSell(item), 0);
+    const grossAmount = calcEntries.length > 0
+      ? Math.max(0, Math.round(sellTotal))
+      : Math.max(0, Math.round(+amountEl.value||0));
+
     const payload = {
       date: dateEl.value,
       patient: (patientEl.value||'').trim(),
       procedure: (procedureEl.value||'').trim(),
       amount: Math.max(0, Math.round(+amountEl.value||0)),
+      grossAmount,
       workplace: workplaceEl.value || null,
       pctAtSave: null,
       ownAtSave: null,
