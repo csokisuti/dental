@@ -435,32 +435,81 @@
   }
 
   // ----- Beavatkozás statisztika (top 20) -----
+  function parseProcedurePart(raw){
+    let text = (raw || '').trim().replace(/\s+/g,' ');
+    if(!text) return null;
+
+    let mode = 'normal';
+    if(/\(előleg\)$/i.test(text)){
+      mode = 'advance';
+      text = text.replace(/\(előleg\)$/i, '').trim();
+    }else if(/\(átadás\)$/i.test(text)){
+      mode = 'delivery';
+      text = text.replace(/\(átadás\)$/i, '').trim();
+    }
+
+    let qty = 1;
+    const match = text.match(/^(\d+)\s+(.+)$/);
+    if(match){
+      qty = Math.max(1, parseInt(match[1], 10) || 1);
+      text = match[2].trim();
+    }
+
+    if(!text) return null;
+
+    return {
+      name: text,
+      key: text.toLocaleLowerCase('hu-HU'),
+      qty,
+      mode
+    };
+  }
+
   function renderProcedureStats(allEntries){
-    const agg = new Map(); // key: lc name -> {display,count,gross,base,own}
+    const agg = new Map(); // key -> {display, normalQty, advanceQty, deliveryQty, gross, base, own}
     for(const e of allEntries){
-      const parts = splitProcedures(e.procedure||'');
+      const parsedParts = splitProcedures(e.procedure||'').map(parseProcedurePart).filter(Boolean);
+      if(parsedParts.length===0) continue;
+
       const pct = (e.pctAtSave!=null) ? e.pctAtSave : pctFor(e.workplace);
       const own = (e.ownAtSave!=null) ? e.ownAtSave : Math.round((+e.amount||0)*pct);
       const grossAmount = +e.grossAmount || +e.amount || 0;
       const baseAmount = +e.amount || 0;
 
-      const n = Math.max(1, parts.length);
-      const shareGross = Math.round(grossAmount / n);
-      const shareBase  = Math.round(baseAmount / n);
-      const shareOwn   = Math.round((own||0) / n);
+      const totalQty = Math.max(1, parsedParts.reduce((sum, part)=> sum + part.qty, 0));
 
-      for(const p of parts){
-        const key = p.toLocaleLowerCase('hu-HU');
-        const rec = agg.get(key) || {display:p, count:0, gross:0, base:0, own:0};
-        if(rec.count===0) rec.display = p;
-        rec.count += 1;
+      for(const part of parsedParts){
+        const weight = part.qty / totalQty;
+        const shareGross = Math.round(grossAmount * weight);
+        const shareBase  = Math.round(baseAmount * weight);
+        const shareOwn   = Math.round((own || 0) * weight);
+
+        const rec = agg.get(part.key) || {
+          display: part.name,
+          normalQty: 0,
+          advanceQty: 0,
+          deliveryQty: 0,
+          gross: 0,
+          base: 0,
+          own: 0
+        };
+
+        if(part.mode === 'advance') rec.advanceQty += part.qty;
+        else if(part.mode === 'delivery') rec.deliveryQty += part.qty;
+        else rec.normalQty += part.qty;
+
         rec.gross += shareGross;
         rec.base  += shareBase;
         rec.own   += shareOwn;
-        agg.set(key, rec);
+        agg.set(part.key, rec);
       }
     }
+
     const rows = Array.from(agg.values())
+      .map(r => ({
+        ...r,
+        count: r.normalQty + Math.max(r.advanceQty, r.deliveryQty)
+      }))
       .sort((a,b)=> b.count-a.count || b.gross-a.gross)
       .slice(0,20);
 
