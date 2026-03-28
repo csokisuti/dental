@@ -215,7 +215,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, query, orderBy, updateDoc, deleteDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot, query, orderBy, updateDoc, deleteDoc, runTransaction, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
@@ -312,6 +312,41 @@
       }
     }
     if(ops.length) await Promise.all(ops);
+  }
+
+  function sortMonthEntriesForSeq(list){
+    return list.slice().sort((a,b)=>{
+      const da = new Date(a.date||'1970-01-01').getTime();
+      const db = new Date(b.date||'1970-01-01').getTime();
+      if(da !== db) return da - db;
+      const ca = a.createdAt || 0;
+      const cb = b.createdAt || 0;
+      if(ca !== cb) return ca - cb;
+      return (a.id||'').localeCompare(b.id||'');
+    });
+  }
+
+  async function resequenceMonthAfterDelete(deletedEntry){
+    if(!deletedEntry) return;
+    const mk = deletedEntry.monthKey || monthKey(deletedEntry.date);
+    if(!mk) return;
+
+    const remaining = sortMonthEntriesForSeq(
+      entries.filter(e => e.id !== deletedEntry.id && (e.monthKey || monthKey(e.date)) === mk)
+    );
+
+    const batch = writeBatch(db);
+
+    remaining.forEach((entry, index)=>{
+      const nextSeq = index + 1;
+      if(entry.seq !== nextSeq){
+        batch.update(doc(db,'users',uid,'entries',entry.id), { seq: nextSeq });
+      }
+    });
+
+    batch.set(doc(db,'users',uid,'counters',mk), { lastSeq: remaining.length }, { merge: true });
+
+    await batch.commit();
   }
 
   onAuthStateChanged(auth, async user=>{
@@ -447,7 +482,16 @@
       editWorkplace.selectedIndex = idx>=0?idx:0;
       window.scrollTo({top:0,behavior:'smooth'});
     }else if(del){
-      if(confirm('Biztosan törlöd?')){ await deleteDoc(doc(db,'users',uid,'entries',del)); }
+      const it = entries.find(x=>x.id===del);
+      if(!it) return;
+      if(confirm('Biztosan törlöd?')){
+        try{
+          await deleteDoc(doc(db,'users',uid,'entries',del));
+          await resequenceMonthAfterDelete(it);
+        }catch(err){
+          alert(err?.message || 'Törlési hiba');
+        }
+      }
     }
   });
 
