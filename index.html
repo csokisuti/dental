@@ -795,57 +795,6 @@
     return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
   }
 
-  async function maybeAddNewProceduresToSettings(procText){
-    const items = splitProcedures(procText);
-    const slot = currentSlot();
-
-    const existing = (settings.proceduresByPlace?.[slot]) || [];
-    const existingMap = new Map(existing.map(orig => [normalizeProcName(orig), orig]));
-    const missing = items.filter(x => !existingMap.has(normalizeProcName(x)));
-    if(missing.length===0) return false;
-
-    const placeName = slot==='w1' ? (settings.w1name||'Hely1') : (settings.w2name||'Hely2');
-    const ok = confirm(`A következő új beavatkozás(ok) nincsenek a(z) "${placeName}" gyorslistájában:\n\n${missing.map(m=>`• ${m}`).join('\n')}\n\nHozzáadjam most?`);
-    if(!ok) return false;
-
-    const updated = existing.slice();
-    const updatedSeen = new Set(existing.map(normalizeProcName));
-    for(const m of missing){
-      const key = normalizeProcName(m);
-      if(!updatedSeen.has(key)){
-        updated.push(m);
-        updatedSeen.add(key);
-      }
-    }
-    const updatedSlotList = updated.slice(0,100);
-
-    const allForCompat = [...(settings.proceduresByPlace?.w1||[]), ...(settings.proceduresByPlace?.w2||[]), ...missing];
-    const compatSeen = new Set();
-    const mergedProcedures = [];
-    for(const p of allForCompat){
-      const k = normalizeProcName(p);
-      if(!compatSeen.has(k)){
-        compatSeen.add(k);
-        mergedProcedures.push(p);
-      }
-    }
-
-    await setDoc(doc(db,'users',currentUID,'meta','settings'), {
-      proceduresByPlace: {
-        ...(settings.proceduresByPlace||{w1:[],w2:[]}),
-        [slot]: updatedSlotList
-      },
-      procedures: mergedProcedures.slice(0,200)
-    }, { merge:true });
-
-    settings.proceduresByPlace = {
-      ...(settings.proceduresByPlace||{w1:[],w2:[]}),
-      [slot]: updatedSlotList
-    };
-    renderQuickProcedures();
-    return true;
-  }
-
   saveBtn.onclick = async ()=>{
     saveOk.classList.add('hide');
     saveErr.classList.add('hide');
@@ -883,7 +832,6 @@
 
     saveBtn.disabled = true;
     try{
-      await maybeAddNewProceduresToSettings(payload.procedure);
       const seq = await nextMonthlySeq(currentUID, mKey);
       await addDoc(collection(db,'users',currentUID,'entries'), { ...payload, monthKey: mKey, seq });
       localStorage.setItem(lastKey(), payload.workplace);
