@@ -53,6 +53,9 @@
   .calc-grid{display:grid;grid-template-columns:minmax(0,1.2fr) .6fr .8fr .8fr 1fr auto;gap:10px;align-items:end}
   .calc-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
   .calc-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+  .calc-mode{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .calc-mode .mode-btn{flex:1 1 0}
+  .calc-mode .mode-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
   .summary-box{border:1px solid var(--line);border-radius:12px;padding:12px;background:#f8fafc}
   .summary-box strong{display:block;font-size:18px;margin-top:4px}
   .calc-empty{padding:12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);text-align:center;margin-top:12px}
@@ -167,6 +170,13 @@
       <div id="calcRows" class="calc-list"></div>
       <div id="calcEmpty" class="calc-empty">Nincs még hozzáadott tétel.</div>
 
+      <div class="calc-mode">
+        <button class="btn mode-btn active" id="calcModeNormalBtn" type="button">Normál</button>
+        <button class="btn mode-btn" id="calcModeAdvanceBtn" type="button">Előleg</button>
+        <button class="btn mode-btn" id="calcModeDeliveryBtn" type="button">Átadás</button>
+      </div>
+      <div class="muted" style="margin-top:6px">Előleg: fél eladási ár és teljes technikai levonás. Átadás: fél eladási ár, technikai levonás nélkül.</div>
+
       <div class="calc-summary">
         <div class="summary-box">
           <span class="muted">Összes eladási ár</span>
@@ -253,6 +263,9 @@
   const calcFinalAmount = document.getElementById('calcFinalAmount');
   const calcResetToNetBtn = document.getElementById('calcResetToNetBtn');
   const calcApplyBtn = document.getElementById('calcApplyBtn');
+  const calcModeNormalBtn = document.getElementById('calcModeNormalBtn');
+  const calcModeAdvanceBtn = document.getElementById('calcModeAdvanceBtn');
+  const calcModeDeliveryBtn = document.getElementById('calcModeDeliveryBtn');
 
   const saveOk = document.getElementById('saveOk');
   const saveErr = document.getElementById('saveErr');
@@ -267,6 +280,7 @@
 
   let calcEntries = [];
   let calcFinalDirty = false;
+  let calcMode = 'normal';
 
   const patientsIndex = new Map();
   const amountIndex = new Map();
@@ -385,6 +399,30 @@
     return items.find(item => item.id === calcItemSelect.value) || null;
   }
 
+  function setCalcMode(mode){
+    calcMode = mode;
+    calcModeNormalBtn.classList.toggle('active', mode === 'normal');
+    calcModeAdvanceBtn.classList.toggle('active', mode === 'advance');
+    calcModeDeliveryBtn.classList.toggle('active', mode === 'delivery');
+    renderCalculator();
+  }
+
+  function getAdjustedSell(entry){
+    const fullSell = safeMoney(entry.sell) * safeQty(entry.qty);
+    if(calcMode === 'advance' || calcMode === 'delivery') return Math.round(fullSell / 2);
+    return fullSell;
+  }
+
+  function getAdjustedTech(entry){
+    if(calcMode === 'delivery') return 0;
+    return safeMoney(entry.tech) * safeQty(entry.qty);
+  }
+
+  function getRowCommissionBase(entry){
+    if(entry.noCommission) return 0;
+    return Math.max(0, getAdjustedSell(entry) - getAdjustedTech(entry));
+  }
+
   function renderCalcRows(){
     calcRows.innerHTML = '';
     calcEmpty.classList.toggle('hide', calcEntries.length>0);
@@ -413,7 +451,7 @@
 
       const c6 = document.createElement('div');
       c6.className = 'calc-actions';
-      const rowBase = entry.noCommission ? 0 : Math.max(0, (entry.sell * entry.qty) - (entry.tech * entry.qty));
+      const rowBase = getRowCommissionBase(entry);
       const subtotal = document.createElement('div');
       subtotal.className = 'muted';
       subtotal.style.width = '100%';
@@ -478,12 +516,9 @@
 
   function renderCalculator(){
     renderCalcRows();
-    const sellTotal = calcEntries.reduce((sum, item)=> sum + (safeMoney(item.sell) * safeQty(item.qty)), 0);
-    const techTotal = calcEntries.reduce((sum, item)=> sum + (safeMoney(item.tech) * safeQty(item.qty)), 0);
-    const netTotal = calcEntries.reduce((sum, item)=>{
-      if(item.noCommission) return sum;
-      return sum + Math.max(0, (safeMoney(item.sell) * safeQty(item.qty)) - (safeMoney(item.tech) * safeQty(item.qty)));
-    }, 0);
+    const sellTotal = calcEntries.reduce((sum, item)=> sum + getAdjustedSell(item), 0);
+    const techTotal = calcEntries.reduce((sum, item)=> sum + getAdjustedTech(item), 0);
+    const netTotal = calcEntries.reduce((sum, item)=> sum + getRowCommissionBase(item), 0);
     calcSellTotal.textContent = formatHuf(sellTotal);
     calcTechTotal.textContent = formatHuf(techTotal);
     calcNetTotal.textContent = formatHuf(netTotal);
@@ -496,6 +531,10 @@
 
   function resetCalculator(keepFinalDirty=false){
     calcEntries = [];
+    calcMode = 'normal';
+    calcModeNormalBtn.classList.add('active');
+    calcModeAdvanceBtn.classList.remove('active');
+    calcModeDeliveryBtn.classList.remove('active');
     if(!keepFinalDirty) calcFinalDirty = false;
     calcQty.value = '1';
     procedureEl.value = '';
@@ -535,6 +574,10 @@
     calcFinalDirty = false;
     renderCalculator();
   });
+
+  calcModeNormalBtn.addEventListener('click', ()=> setCalcMode('normal'));
+  calcModeAdvanceBtn.addEventListener('click', ()=> setCalcMode('advance'));
+  calcModeDeliveryBtn.addEventListener('click', ()=> setCalcMode('delivery'));
 
   calcApplyBtn.addEventListener('click', ()=>{
     procedureEl.value = buildCalcProcedureText();
