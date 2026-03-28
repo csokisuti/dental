@@ -503,12 +503,16 @@
   }
 
   function buildCalcProcedureText(){
+    let suffix = '';
+    if(calcMode === 'advance') suffix = ' (előleg)';
+    if(calcMode === 'delivery') suffix = ' (átadás)';
+
     return calcEntries
       .map(item => {
         const qty = safeQty(item.qty);
         const name = (item.name || '').trim();
         if(!name) return '';
-        return `${qty} ${name}`;
+        return `${qty} ${name}${suffix}`;
       })
       .filter(Boolean)
       .join(', ');
