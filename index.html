@@ -50,12 +50,9 @@
   .calc-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
   .calc-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
   .calc-row{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
-  .calc-grid{display:grid;grid-template-columns:minmax(0,1.2fr) .6fr .8fr .8fr 1fr auto;gap:10px;align-items:end}
+  .calc-grid{display:grid;grid-template-columns:minmax(0,1.2fr) .6fr .9fr .8fr .8fr 1fr auto;gap:10px;align-items:end}
   .calc-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
   .calc-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
-  .calc-mode{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-  .calc-mode .mode-btn{flex:1 1 0}
-  .calc-mode .mode-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
   .summary-box{border:1px solid var(--line);border-radius:12px;padding:12px;background:#f8fafc}
   .summary-box strong{display:block;font-size:18px;margin-top:4px}
   .calc-empty{padding:12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);text-align:center;margin-top:12px}
@@ -72,17 +69,7 @@
 </style>
 </head>
 <body>
-<div id="loader" class="loader">
-  <div class="loader-inner">
-    <svg class="tooth spin" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Betöltés">
-      <path d="M20 8c-6 0-10 5-10 12 0 9 5 14 9 17 4 3 5 15 9 15s5-9 9-9 5 9 9 9 5-12 9-15c4-3 9-8 9-17 0-7-4-12-10-12-5 0-9 2-12 5-3-3-7-5-12-5z" stroke="#2563eb" stroke-width="2" fill="#fff"/>
-      <circle cx="26" cy="24" r="2.5" fill="#0f172a"/>
-      <circle cx="38" cy="24" r="2.5" fill="#0f172a"/>
-      <path d="M24 33c2 3 6 5 8 5s6-2 8-5" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-    <div class="loader-text">Betöltés…</div>
-  </div>
-</div>
+<div id="loader" class="loader"><div class="loader-inner"><svg class="tooth spin" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Betöltés"><path d="M20 8c-6 0-10 5-10 12 0 9 5 14 9 17 4 3 5 15 9 15s5-9 9-9 5 9 9 9 5-12 9-15c4-3 9-8 9-17 0-7-4-12-10-12-5 0-9 2-12 5-3-3-7-5-12-5z" stroke="#2563eb" stroke-width="2" fill="#fff"/><circle cx="26" cy="24" r="2.5" fill="#0f172a"/><circle cx="38" cy="24" r="2.5" fill="#0f172a"/><path d="M24 33c2 3 6 5 8 5s6-2 8-5" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/></svg><div class="loader-text">Betöltés…</div></div></div>
 
 <div class="layout hide" id="root">
   <div class="topbar">
@@ -111,20 +98,12 @@
 
   <div id="appContent" class="card hide">
     <div class="topbar"><h2>Új bejegyzés</h2></div>
-
     <div id="saveOk" class="alert ok hide">Sikeresen mentve ✓</div>
     <div id="saveErr" class="alert err hide"></div>
 
     <div class="row">
-      <div>
-        <label>Dátum</label>
-        <input type="date" id="date">
-      </div>
-      <div>
-        <label>Páciens neve</label>
-        <input type="text" id="patient" placeholder="Pl. Kiss Anna" autocomplete="name" list="patientList">
-        <datalist id="patientList"></datalist>
-      </div>
+      <div><label>Dátum</label><input type="date" id="date"></div>
+      <div><label>Páciens neve</label><input type="text" id="patient" placeholder="Pl. Kiss Anna" autocomplete="name" list="patientList"><datalist id="patientList"></datalist></div>
     </div>
 
     <div>
@@ -134,69 +113,36 @@
     </div>
 
     <div class="row">
-      <div>
-        <label>Fizetett összeg (HUF)</label>
-        <input type="number" id="amount" min="0" step="1" inputmode="numeric" placeholder="pl. 25000" list="amountList">
-        <datalist id="amountList"></datalist>
-      </div>
-      <div>
-        <label>Munkahely</label>
-        <select id="workplace"></select>
-      </div>
+      <div><label>Fizetett összeg (HUF)</label><input type="number" id="amount" min="0" step="1" inputmode="numeric" placeholder="pl. 25000" list="amountList"><datalist id="amountList"></datalist></div>
+      <div><label>Munkahely</label><select id="workplace"></select></div>
     </div>
 
     <div class="card" style="margin-top:16px;padding:14px">
       <div class="calc-head">
         <div>
           <h3>Pótlás kalkulátor</h3>
-          <div class="muted">Munkahelyenként külön árlista alapján számol. Az eladási és technikai ár soronként közben is átírható.</div>
+          <div class="muted">Munkahelyenként külön árlista alapján számol. Minden sor külön lehet normál, előleg vagy átadás.</div>
         </div>
       </div>
 
       <div class="row3" style="margin-top:10px">
-        <div>
-          <label>Tétel</label>
-          <select id="calcItemSelect"></select>
-        </div>
-        <div>
-          <label>Darab</label>
-          <input type="number" id="calcQty" min="1" step="1" inputmode="numeric" value="1">
-        </div>
-        <div style="display:flex;align-items:flex-end">
-          <button class="btn" id="calcAddBtn" type="button" style="width:100%">Tétel hozzáadása</button>
-        </div>
+        <div><label>Tétel</label><select id="calcItemSelect"></select></div>
+        <div><label>Darab</label><input type="number" id="calcQty" min="1" step="1" inputmode="numeric" value="1"></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn" id="calcAddBtn" type="button" style="width:100%">Tétel hozzáadása</button></div>
       </div>
 
       <div id="calcRows" class="calc-list"></div>
       <div id="calcEmpty" class="calc-empty">Nincs még hozzáadott tétel.</div>
-
-      <div class="calc-mode">
-        <button class="btn mode-btn active" id="calcModeNormalBtn" type="button">Normál</button>
-        <button class="btn mode-btn" id="calcModeAdvanceBtn" type="button">Előleg</button>
-        <button class="btn mode-btn" id="calcModeDeliveryBtn" type="button">Átadás</button>
-      </div>
-      <div class="muted" style="margin-top:6px">Előleg: fél eladási ár és teljes technikai levonás. Átadás: fél eladási ár, technikai levonás nélkül.</div>
+      <div class="muted" style="margin-top:8px">Előleg: fél eladási ár és teljes technikai levonás. Átadás: fél eladási ár, technikai levonás nélkül.</div>
 
       <div class="calc-summary">
-        <div class="summary-box">
-          <span class="muted">Összes eladási ár</span>
-          <strong id="calcSellTotal">0 Ft</strong>
-        </div>
-        <div class="summary-box">
-          <span class="muted">Összes technikai ár</span>
-          <strong id="calcTechTotal">0 Ft</strong>
-        </div>
-        <div class="summary-box">
-          <span class="muted">Számolt jutalékalap</span>
-          <strong id="calcNetTotal">0 Ft</strong>
-        </div>
+        <div class="summary-box"><span class="muted">Összes eladási ár</span><strong id="calcSellTotal">0 Ft</strong></div>
+        <div class="summary-box"><span class="muted">Összes technikai ár</span><strong id="calcTechTotal">0 Ft</strong></div>
+        <div class="summary-box"><span class="muted">Számolt jutalékalap</span><strong id="calcNetTotal">0 Ft</strong></div>
       </div>
 
       <div class="row" style="margin-top:12px">
-        <div>
-          <label>Kalkulátor végösszeg (manuálisan átírható)</label>
-          <input type="number" id="calcFinalAmount" min="0" step="1" inputmode="numeric" value="0">
-        </div>
+        <div><label>Kalkulátor végösszeg (manuálisan átírható)</label><input type="number" id="calcFinalAmount" min="0" step="1" inputmode="numeric" value="0"></div>
         <div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap">
           <button class="btn" id="calcResetToNetBtn" type="button">Számolt érték visszaállítása</button>
           <button class="btn primary" id="calcApplyBtn" type="button">Összeg átvitele</button>
@@ -216,16 +162,7 @@
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
   import { getFirestore, collection, addDoc, doc, getDoc, setDoc, runTransaction, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey:"AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
-    authDomain:"dental-38375.firebaseapp.com",
-    projectId:"dental-38375",
-    storageBucket:"dental-38375.appspot.com",
-    messagingSenderId:"245424156358",
-    appId:"1:245424156358:web:e6426588b20675756331c7",
-    measurementId:"G-WC90WMHRZT"
-  };
-
+  const firebaseConfig = {apiKey:"AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",authDomain:"dental-38375.firebaseapp.com",projectId:"dental-38375",storageBucket:"dental-38375.appspot.com",messagingSenderId:"245424156358",appId:"1:245424156358:web:e6426588b20675756331c7",measurementId:"G-WC90WMHRZT"};
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -263,24 +200,14 @@
   const calcFinalAmount = document.getElementById('calcFinalAmount');
   const calcResetToNetBtn = document.getElementById('calcResetToNetBtn');
   const calcApplyBtn = document.getElementById('calcApplyBtn');
-  const calcModeNormalBtn = document.getElementById('calcModeNormalBtn');
-  const calcModeAdvanceBtn = document.getElementById('calcModeAdvanceBtn');
-  const calcModeDeliveryBtn = document.getElementById('calcModeDeliveryBtn');
 
   const saveOk = document.getElementById('saveOk');
   const saveErr = document.getElementById('saveErr');
 
   let currentUID = null;
-  let settings = {
-    w1name:'Hely1', w1pct:0.30, w1color:'#2563eb',
-    w2name:'Hely2', w2pct:0.40, w2color:'#16a34a',
-    proceduresByPlace:{ w1:[], w2:[] },
-    itemsByPlace:{ w1:[], w2:[] }
-  };
-
+  let settings = {w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a', proceduresByPlace:{ w1:[], w2:[] }, itemsByPlace:{ w1:[], w2:[] }};
   let calcEntries = [];
   let calcFinalDirty = false;
-  let calcMode = 'normal';
 
   const patientsIndex = new Map();
   const amountIndex = new Map();
@@ -302,7 +229,6 @@
     workplaceEl.style.color = contrast(color);
     workplaceEl.style.borderColor = color;
   }
-
   function makeColoredOption(name, color){
     const opt = document.createElement('option');
     opt.textContent = `● ${name}`;
@@ -312,7 +238,6 @@
     opt.style.fontWeight='600';
     return opt;
   }
-
   function bindWorkplaceOptions(){
     workplaceEl.innerHTML = '';
     [{name:settings.w1name,color:settings.w1color},{name:settings.w2name,color:settings.w2color}].forEach(({name,color})=> workplaceEl.appendChild(makeColoredOption(name,color)));
@@ -320,25 +245,20 @@
     if(last){
       const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===last);
       workplaceEl.selectedIndex = idx>=0 ? idx : 0;
-    }else{
-      workplaceEl.selectedIndex = 0;
-    }
+    } else workplaceEl.selectedIndex = 0;
     setSelectBG(workplaceEl.value);
   }
-
   function currentSlot(){
     const v = workplaceEl.value;
     if(v===settings.w1name) return 'w1';
     if(v===settings.w2name) return 'w2';
     return 'w1';
   }
-
   function appendProcedureText(txt){
     const cur = (procedureEl.value || '').trim();
     procedureEl.value = cur ? (cur + (cur.endsWith(',')?' ':', ') + txt) : txt;
     procedureEl.dispatchEvent(new Event('input'));
   }
-
   function renderQuickProcedures(){
     quickWrap.innerHTML = '';
     const slot = currentSlot();
@@ -368,7 +288,6 @@
       noCommission: !!item?.noCommission
     })).filter(item => item.name).slice(0,200);
   }
-
   function renderCalcItemOptions(){
     const slot = currentSlot();
     const items = sanitizeItems(settings.itemsByPlace?.[slot] || []);
@@ -389,35 +308,25 @@
     });
     calcAddBtn.disabled = false;
   }
-
-  function getCurrentCalcSourceItems(){
-    return sanitizeItems(settings.itemsByPlace?.[currentSlot()] || []);
-  }
-
+  function getCurrentCalcSourceItems(){ return sanitizeItems(settings.itemsByPlace?.[currentSlot()] || []); }
   function getSelectedCalcItem(){
     const items = getCurrentCalcSourceItems();
     return items.find(item => item.id === calcItemSelect.value) || null;
   }
-
-  function setCalcMode(mode){
-    calcMode = mode;
-    calcModeNormalBtn.classList.toggle('active', mode === 'normal');
-    calcModeAdvanceBtn.classList.toggle('active', mode === 'advance');
-    calcModeDeliveryBtn.classList.toggle('active', mode === 'delivery');
-    renderCalculator();
+  function getModeSuffix(mode){
+    if(mode === 'advance') return ' (előleg)';
+    if(mode === 'delivery') return ' (átadás)';
+    return '';
   }
-
   function getAdjustedSell(entry){
     const fullSell = safeMoney(entry.sell) * safeQty(entry.qty);
-    if(calcMode === 'advance' || calcMode === 'delivery') return Math.round(fullSell / 2);
+    if(entry.mode === 'advance' || entry.mode === 'delivery') return Math.round(fullSell / 2);
     return fullSell;
   }
-
   function getAdjustedTech(entry){
-    if(calcMode === 'delivery') return 0;
+    if(entry.mode === 'delivery') return 0;
     return safeMoney(entry.tech) * safeQty(entry.qty);
   }
-
   function getRowCommissionBase(entry){
     if(entry.noCommission) return 0;
     return Math.max(0, getAdjustedSell(entry) - getAdjustedTech(entry));
@@ -426,96 +335,60 @@
   function renderCalcRows(){
     calcRows.innerHTML = '';
     calcEmpty.classList.toggle('hide', calcEntries.length>0);
-
     calcEntries.forEach(entry=>{
       const row = document.createElement('div');
       row.className = 'calc-row';
-
-      const grid = document.createElement('div');
-      grid.className = 'calc-grid';
-
-      const c1 = document.createElement('div');
-      c1.innerHTML = `<label>Tétel</label><input value="${escapeHtml(entry.name)}" data-field="name" data-id="${entry.id}"><div class="muted" style="margin-top:6px">${entry.noCommission ? 'Nem jutalékos tétel' : 'Jutalékos tétel'}</div>`;
-
-      const c2 = document.createElement('div');
-      c2.innerHTML = `<label>Db</label><input type="number" min="1" step="1" inputmode="numeric" value="${entry.qty}" data-field="qty" data-id="${entry.id}">`;
-
-      const c3 = document.createElement('div');
-      c3.innerHTML = `<label>Eladási ár / db</label><input type="number" min="0" step="1" inputmode="numeric" value="${entry.sell}" data-field="sell" data-id="${entry.id}">`;
-
-      const c4 = document.createElement('div');
-      c4.innerHTML = `<label>Technikai ár / db</label><input type="number" min="0" step="1" inputmode="numeric" value="${entry.tech}" data-field="tech" data-id="${entry.id}">`;
-
-      const c5 = document.createElement('div');
-      c5.innerHTML = `<label style="display:flex;align-items:center;gap:10px;color:var(--text);font-size:14px"><input type="checkbox" data-field="noCommission" data-id="${entry.id}" ${entry.noCommission ? 'checked' : ''} style="width:auto;min-width:18px;height:18px;padding:0;appearance:auto;-webkit-appearance:checkbox"> Nem jutalékos</label>`;
-
-      const c6 = document.createElement('div');
-      c6.className = 'calc-actions';
-      const rowBase = getRowCommissionBase(entry);
-      const subtotal = document.createElement('div');
-      subtotal.className = 'muted';
-      subtotal.style.width = '100%';
-      subtotal.style.textAlign = 'right';
-      subtotal.textContent = `Sor jutalékalap: ${formatHuf(rowBase)}`;
-      const del = document.createElement('button');
-      del.className = 'btn';
-      del.type = 'button';
-      del.textContent = 'Törlés';
-      del.onclick = ()=>{
-        calcEntries = calcEntries.filter(x => x.id !== entry.id);
-        renderCalculator();
-      };
-      c6.appendChild(subtotal);
-      c6.appendChild(del);
-
-      grid.appendChild(c1);
-      grid.appendChild(c2);
-      grid.appendChild(c3);
-      grid.appendChild(c4);
-      grid.appendChild(c5);
-      grid.appendChild(c6);
-      row.appendChild(grid);
+      row.innerHTML = `
+        <div class="calc-grid">
+          <div><label>Tétel</label><input value="${escapeHtml(entry.name)}" data-field="name" data-id="${entry.id}"><div class="muted" style="margin-top:6px">${entry.noCommission ? 'Nem jutalékos tétel' : 'Jutalékos tétel'}</div></div>
+          <div><label>Db</label><input type="number" min="1" step="1" inputmode="numeric" value="${entry.qty}" data-field="qty" data-id="${entry.id}"></div>
+          <div><label>Típus</label><select data-field="mode" data-id="${entry.id}">
+            <option value="normal" ${entry.mode==='normal'?'selected':''}>Normál</option>
+            <option value="advance" ${entry.mode==='advance'?'selected':''}>Előleg</option>
+            <option value="delivery" ${entry.mode==='delivery'?'selected':''}>Átadás</option>
+          </select></div>
+          <div><label>Eladási ár / db</label><input type="number" min="0" step="1" inputmode="numeric" value="${entry.sell}" data-field="sell" data-id="${entry.id}"></div>
+          <div><label>Technikai ár / db</label><input type="number" min="0" step="1" inputmode="numeric" value="${entry.tech}" data-field="tech" data-id="${entry.id}"></div>
+          <div><label style="display:flex;align-items:center;gap:10px;color:var(--text);font-size:14px"><input type="checkbox" data-field="noCommission" data-id="${entry.id}" ${entry.noCommission ? 'checked' : ''} style="width:auto;min-width:18px;height:18px;padding:0;appearance:auto;-webkit-appearance:checkbox"> Nem jutalékos</label></div>
+          <div class="calc-actions"><div class="muted" style="width:100%;text-align:right">Sor jutalékalap: ${formatHuf(getRowCommissionBase(entry))}</div><button class="btn" type="button" data-del="${entry.id}">Törlés</button></div>
+        </div>`;
       calcRows.appendChild(row);
     });
 
-    calcRows.querySelectorAll('input[data-id]').forEach(input=>{
-      input.addEventListener('input', e=>{
+    calcRows.querySelectorAll('[data-id]').forEach(input=>{
+      const handler = e=>{
         const id = e.target.dataset.id;
         const field = e.target.dataset.field;
         const entry = calcEntries.find(x => x.id === id);
         if(!entry) return;
         if(field === 'name') entry.name = (e.target.value || '').trim();
         if(field === 'qty') entry.qty = safeQty(e.target.value);
+        if(field === 'mode') entry.mode = e.target.value || 'normal';
         if(field === 'sell') entry.sell = safeMoney(e.target.value);
         if(field === 'tech') entry.tech = safeMoney(e.target.value);
         if(field === 'noCommission') entry.noCommission = !!e.target.checked;
         renderCalculator();
-      });
-      input.addEventListener('change', e=>{
-        const id = e.target.dataset.id;
-        const field = e.target.dataset.field;
-        const entry = calcEntries.find(x => x.id === id);
-        if(!entry) return;
-        if(field === 'noCommission') entry.noCommission = !!e.target.checked;
+      };
+      input.addEventListener('input', handler);
+      input.addEventListener('change', handler);
+    });
+
+    calcRows.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        const id = e.target.dataset.del;
+        calcEntries = calcEntries.filter(x => x.id !== id);
         renderCalculator();
       });
     });
   }
 
   function buildCalcProcedureText(){
-    let suffix = '';
-    if(calcMode === 'advance') suffix = ' (előleg)';
-    if(calcMode === 'delivery') suffix = ' (átadás)';
-
-    return calcEntries
-      .map(item => {
-        const qty = safeQty(item.qty);
-        const name = (item.name || '').trim();
-        if(!name) return '';
-        return `${qty} ${name}${suffix}`;
-      })
-      .filter(Boolean)
-      .join(', ');
+    return calcEntries.map(item => {
+      const qty = safeQty(item.qty);
+      const name = (item.name || '').trim();
+      if(!name) return '';
+      return `${qty} ${name}${getModeSuffix(item.mode)}`;
+    }).filter(Boolean).join(', ');
   }
 
   function renderCalculator(){
@@ -528,17 +401,11 @@
     calcNetTotal.textContent = formatHuf(netTotal);
     procedureEl.value = buildCalcProcedureText();
     procedureEl.dispatchEvent(new Event('input'));
-    if(!calcFinalDirty){
-      calcFinalAmount.value = String(netTotal);
-    }
+    if(!calcFinalDirty) calcFinalAmount.value = String(netTotal);
   }
 
   function resetCalculator(keepFinalDirty=false){
     calcEntries = [];
-    calcMode = 'normal';
-    calcModeNormalBtn.classList.add('active');
-    calcModeAdvanceBtn.classList.remove('active');
-    calcModeDeliveryBtn.classList.remove('active');
     if(!keepFinalDirty) calcFinalDirty = false;
     calcQty.value = '1';
     procedureEl.value = '';
@@ -556,15 +423,7 @@
   calcAddBtn.addEventListener('click', ()=>{
     const item = getSelectedCalcItem();
     if(!item) return;
-    calcEntries.push({
-      id: createCalcId(),
-      sourceId: item.id,
-      name: item.name,
-      qty: safeQty(calcQty.value),
-      sell: safeMoney(item.sell),
-      tech: safeMoney(item.tech),
-      noCommission: !!item.noCommission
-    });
+    calcEntries.push({id: createCalcId(), sourceId: item.id, name: item.name, qty: safeQty(calcQty.value), mode: 'normal', sell: safeMoney(item.sell), tech: safeMoney(item.tech), noCommission: !!item.noCommission});
     calcQty.value = '1';
     renderCalculator();
   });
@@ -573,16 +432,7 @@
     calcFinalDirty = true;
     calcFinalAmount.value = String(safeMoney(calcFinalAmount.value));
   });
-
-  calcResetToNetBtn.addEventListener('click', ()=>{
-    calcFinalDirty = false;
-    renderCalculator();
-  });
-
-  calcModeNormalBtn.addEventListener('click', ()=> setCalcMode('normal'));
-  calcModeAdvanceBtn.addEventListener('click', ()=> setCalcMode('advance'));
-  calcModeDeliveryBtn.addEventListener('click', ()=> setCalcMode('delivery'));
-
+  calcResetToNetBtn.addEventListener('click', ()=>{ calcFinalDirty = false; renderCalculator(); });
   calcApplyBtn.addEventListener('click', ()=>{
     procedureEl.value = buildCalcProcedureText();
     procedureEl.dispatchEvent(new Event('input'));
@@ -590,16 +440,8 @@
     amountEl.dispatchEvent(new Event('input'));
   });
 
-  function showAuth(){
-    authCard.classList.remove('hide');
-    appContent.classList.add('hide');
-  }
-
-  function showApp(){
-    authCard.classList.add('hide');
-    appContent.classList.remove('hide');
-  }
-
+  function showAuth(){ authCard.classList.remove('hide'); appContent.classList.add('hide'); }
+  function showApp(){ authCard.classList.add('hide'); appContent.classList.remove('hide'); }
   function uiAuth(isLogged){
     root.classList.remove('hide');
     if(isLogged){
@@ -612,51 +454,31 @@
       hideLoader();
     }
   }
-
   const tryLogin = async (fn)=>{
     authMsg.textContent='';
-    try{
-      await fn();
-      showLoader();
-    }catch(e){
-      authMsg.textContent=e?.message || 'Hiba';
-    }
+    try{ await fn(); showLoader(); }catch(e){ authMsg.textContent=e?.message || 'Hiba'; }
   };
 
   loginBtn.onclick = ()=> tryLogin(()=>signInWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value));
   registerBtn.onclick = ()=> tryLogin(()=>createUserWithEmailAndPassword(auth, emailEl.value.trim(), passEl.value));
-  logoutBtn.onclick = ()=>{
-    showLoader();
-    signOut(auth);
-  };
+  logoutBtn.onclick = ()=>{ showLoader(); signOut(auth); };
 
   onAuthStateChanged(auth, async (user)=>{
-    if(!user){
-      currentUID=null;
-      uiAuth(false);
-      return;
-    }
-
+    if(!user){ currentUID=null; uiAuth(false); return; }
     currentUID = user.uid;
     const sRef = doc(db,'users',currentUID,'meta','settings');
     const snap = await getDoc(sRef);
-    if(!snap.exists()){
-      await setDoc(sRef, settings);
-    }
-
+    if(!snap.exists()) await setDoc(sRef, settings);
     uiAuth(true);
 
     const qRef = query(collection(db,'users',currentUID,'entries'), orderBy('createdAt','desc'), limit(1000));
-
     onSnapshot(qRef, (qs)=>{
       patientsIndex.clear();
       amountIndex.clear();
-
       qs.forEach(d=>{
         const e = d.data();
         const name = (e.patient||'').trim();
         if(name) patientsIndex.set(name.toLowerCase(), name);
-
         const comboKey = makeProcedureComboKey(e.procedure||'');
         if(comboKey && typeof e.amount === 'number' && e.amount>0){
           if(!amountIndex.has(comboKey)) amountIndex.set(comboKey, new Map());
@@ -664,7 +486,6 @@
           m.set(e.amount, (m.get(e.amount)||0)+1);
         }
       });
-
       refreshPatientDatalist();
       refreshAmountDatalist();
     });
@@ -677,56 +498,29 @@
       const s = snap.data();
       const legacy = Array.isArray(s.procedures) ? s.procedures : [];
       const pbp = s.proceduresByPlace && typeof s.proceduresByPlace==='object'
-        ? {
-            w1: Array.isArray(s.proceduresByPlace.w1) ? s.proceduresByPlace.w1 : [],
-            w2: Array.isArray(s.proceduresByPlace.w2) ? s.proceduresByPlace.w2 : []
-          }
+        ? {w1: Array.isArray(s.proceduresByPlace.w1) ? s.proceduresByPlace.w1 : [], w2: Array.isArray(s.proceduresByPlace.w2) ? s.proceduresByPlace.w2 : []}
         : { w1: legacy, w2: legacy };
 
-      settings = {
-        ...settings,
-        w1name: s.w1name ?? settings.w1name,
-        w2name: s.w2name ?? settings.w2name,
-        w1pct: s.w1pct ?? settings.w1pct,
-        w2pct: s.w2pct ?? settings.w2pct,
-        w1color: s.w1color ?? settings.w1color,
-        w2color: s.w2color ?? settings.w2color,
-        proceduresByPlace: pbp,
-        itemsByPlace: s.itemsByPlace && typeof s.itemsByPlace==='object'
-          ? {
-              w1: sanitizeItems(s.itemsByPlace.w1),
-              w2: sanitizeItems(s.itemsByPlace.w2)
-            }
-          : { w1: [], w2: [] }
-      };
+      settings = {...settings, w1name: s.w1name ?? settings.w1name, w2name: s.w2name ?? settings.w2name, w1pct: s.w1pct ?? settings.w1pct, w2pct: s.w2pct ?? settings.w2pct, w1color: s.w1color ?? settings.w1color, w2color: s.w2color ?? settings.w2color, proceduresByPlace: pbp, itemsByPlace: s.itemsByPlace && typeof s.itemsByPlace==='object' ? {w1: sanitizeItems(s.itemsByPlace.w1), w2: sanitizeItems(s.itemsByPlace.w2)} : { w1: [], w2: [] }};
     }
-
     bindWorkplaceOptions();
     renderQuickProcedures();
     resetCalculator();
   }
 
   function clearForm(){
-    patientEl.value='';
-    procedureEl.value='';
-    amountEl.value='';
-    dateEl.value = new Date().toISOString().slice(0,10);
-
+    patientEl.value=''; procedureEl.value=''; amountEl.value=''; dateEl.value = new Date().toISOString().slice(0,10);
     const last = localStorage.getItem(lastKey());
     if(last){
       const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===last);
       workplaceEl.selectedIndex = idx>=0 ? idx : 0;
-    }else{
-      workplaceEl.selectedIndex = 0;
-    }
-
+    } else workplaceEl.selectedIndex = 0;
     setSelectBG(workplaceEl.value);
     renderQuickProcedures();
     resetCalculator();
     patientEl.focus();
     refreshAmountDatalist();
   }
-
   resetBtn.onclick = clearForm;
 
   async function nextMonthlySeq(uid, month){
@@ -741,59 +535,32 @@
     return seq;
   }
 
-  function normalizeProcName(s){
-    return (s||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('hu-HU');
-  }
-
+  function normalizeProcName(s){ return (s||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('hu-HU'); }
   function splitProcedures(text){
     const items = (text||'').split(',').map(s=>s.trim()).filter(Boolean);
-    const seen = new Set();
-    const out = [];
-    for(const it of items){
-      const k = normalizeProcName(it);
-      if(!seen.has(k)){
-        seen.add(k);
-        out.push(it);
-      }
-    }
+    const seen = new Set(); const out = [];
+    for(const it of items){ const k = normalizeProcName(it); if(!seen.has(k)){ seen.add(k); out.push(it); } }
     return out;
   }
-
   function makeProcedureComboKey(text){
     const parts = splitProcedures(text).map(normalizeProcName).sort();
     return parts.length ? parts.join(' | ') : '';
   }
-
   function refreshPatientDatalist(){
     patientListEl.innerHTML = '';
     const values = Array.from(patientsIndex.values()).sort((a,b)=>a.localeCompare(b,'hu-HU'));
-    for(const v of values){
-      const opt = document.createElement('option');
-      opt.value = v;
-      patientListEl.appendChild(opt);
-    }
+    for(const v of values){ const opt = document.createElement('option'); opt.value = v; patientListEl.appendChild(opt); }
   }
-
   function refreshAmountDatalist(){
     amountListEl.innerHTML = '';
     const key = makeProcedureComboKey(procedureEl.value||'');
     if(!key || !amountIndex.has(key)) return;
-
     const map = amountIndex.get(key);
     const pairs = Array.from(map.entries()).sort((a,b)=> b[1]-a[1] || b[0]-a[0]).slice(0,5);
-
-    for(const [amt] of pairs){
-      const opt = document.createElement('option');
-      opt.value = String(amt);
-      amountListEl.appendChild(opt);
-    }
+    for(const [amt] of pairs){ const opt = document.createElement('option'); opt.value = String(amt); amountListEl.appendChild(opt); }
   }
-
   procedureEl.addEventListener('input', refreshAmountDatalist);
-
-  function escapeHtml(str){
-    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-  }
+  function escapeHtml(str){ return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
 
   saveBtn.onclick = async ()=>{
     saveOk.classList.add('hide');
@@ -801,28 +568,14 @@
     saveErr.textContent = '';
 
     const sellTotal = calcEntries.reduce((sum, item)=> sum + getAdjustedSell(item), 0);
-    const grossAmount = calcEntries.length > 0
-      ? Math.max(0, Math.round(sellTotal))
-      : Math.max(0, Math.round(+amountEl.value||0));
-
-    const payload = {
-      date: dateEl.value,
-      patient: (patientEl.value||'').trim(),
-      procedure: (procedureEl.value||'').trim(),
-      amount: Math.max(0, Math.round(+amountEl.value||0)),
-      grossAmount,
-      workplace: workplaceEl.value || null,
-      pctAtSave: null,
-      ownAtSave: null,
-      createdAt: Date.now()
-    };
+    const grossAmount = calcEntries.length > 0 ? Math.max(0, Math.round(sellTotal)) : Math.max(0, Math.round(+amountEl.value||0));
+    const payload = {date: dateEl.value, patient: (patientEl.value||'').trim(), procedure: (procedureEl.value||'').trim(), amount: Math.max(0, Math.round(+amountEl.value||0)), grossAmount, workplace: workplaceEl.value || null, pctAtSave: null, ownAtSave: null, createdAt: Date.now()};
 
     if(!payload.date || !payload.patient || !payload.procedure || !payload.amount || !payload.workplace){
       saveErr.textContent = 'Dátum, páciens, beavatkozás, összeg és munkahely kötelező.';
       saveErr.classList.remove('hide');
       return;
     }
-
     const mKey = monthKey(payload.date);
     if(!mKey){
       saveErr.textContent='Érvénytelen dátum.';
