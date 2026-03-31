@@ -56,6 +56,14 @@
   .summary-box{border:1px solid var(--line);border-radius:12px;padding:12px;background:#f8fafc}
   .summary-box strong{display:block;font-size:18px;margin-top:4px}
   .calc-empty{padding:12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);text-align:center;margin-top:12px}
+
+  .planner-card{margin-top:16px;padding:14px}
+  .planner-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0;border:0;background:transparent;cursor:pointer;text-align:left}
+  .planner-toggle-text{display:flex;flex-direction:column;gap:4px}
+  .planner-chevron{font-size:18px;transition:transform .2s ease}
+  .planner-card.open .planner-chevron{transform:rotate(180deg)}
+  .planner-body{display:none;margin-top:12px}
+  .planner-card.open .planner-body{display:block}
   .nav .btn{min-width:0}
   @media (max-width:760px){
     .row,.row3,.calc-grid,.calc-summary{grid-template-columns:1fr}
@@ -150,6 +158,41 @@
       </div>
     </div>
 
+    <div class="card planner-card" id="plannerCard">
+      <button class="planner-toggle" id="plannerToggle" type="button" aria-expanded="false">
+        <div class="planner-toggle-text">
+          <h3>Havi pótlástervező</h3>
+          <div class="muted">Lenyitható tervező a következő hónap várható pótlásbevételéhez. Nem ment semmit, csak számol.</div>
+        </div>
+        <span class="planner-chevron">⌄</span>
+      </button>
+
+      <div class="planner-body" id="plannerBody">
+        <div class="row3">
+          <div><label>Tervezett hónap</label><input type="month" id="plannerMonth"></div>
+          <div><label>Tétel</label><select id="plannerItemSelect"></select></div>
+          <div style="display:flex;align-items:flex-end"><button class="btn" id="plannerAddBtn" type="button" style="width:100%">Tétel hozzáadása</button></div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div><label>Darab</label><input type="number" id="plannerQty" min="1" step="1" inputmode="numeric" value="1"></div>
+          <div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap">
+            <button class="btn" id="plannerResetBtn" type="button">Tervező ürítése</button>
+          </div>
+        </div>
+
+        <div id="plannerRows" class="calc-list"></div>
+        <div id="plannerEmpty" class="calc-empty">Nincs még hozzáadott tervezett tétel.</div>
+        <div class="muted" style="margin-top:8px">A számítás ugyanazt a logikát követi, mint a pótlás kalkulátor: előlegnél fél eladási ár és teljes technikai levonás, átadásnál fél eladási ár technikai levonás nélkül.</div>
+
+        <div class="calc-summary">
+          <div class="summary-box"><span class="muted">Tervezett összes eladási ár</span><strong id="plannerSellTotal">0 Ft</strong></div>
+          <div class="summary-box"><span class="muted">Tervezett összes technikai ár</span><strong id="plannerTechTotal">0 Ft</strong></div>
+          <div class="summary-box"><span class="muted">Várható bevétel</span><strong id="plannerNetTotal">0 Ft</strong></div>
+        </div>
+      </div>
+    </div>
+
     <div class="toolbar">
       <button class="btn" id="resetBtn">Mezők törlése</button>
       <button class="btn primary" id="saveBtn">Mentés</button>
@@ -201,6 +244,20 @@
   const calcResetToNetBtn = document.getElementById('calcResetToNetBtn');
   const calcApplyBtn = document.getElementById('calcApplyBtn');
 
+  const plannerCard = document.getElementById('plannerCard');
+  const plannerToggle = document.getElementById('plannerToggle');
+  const plannerBody = document.getElementById('plannerBody');
+  const plannerMonth = document.getElementById('plannerMonth');
+  const plannerItemSelect = document.getElementById('plannerItemSelect');
+  const plannerQty = document.getElementById('plannerQty');
+  const plannerAddBtn = document.getElementById('plannerAddBtn');
+  const plannerResetBtn = document.getElementById('plannerResetBtn');
+  const plannerRows = document.getElementById('plannerRows');
+  const plannerEmpty = document.getElementById('plannerEmpty');
+  const plannerSellTotal = document.getElementById('plannerSellTotal');
+  const plannerTechTotal = document.getElementById('plannerTechTotal');
+  const plannerNetTotal = document.getElementById('plannerNetTotal');
+
   const saveOk = document.getElementById('saveOk');
   const saveErr = document.getElementById('saveErr');
 
@@ -208,6 +265,7 @@
   let settings = {w1name:'Hely1', w1pct:0.30, w1color:'#2563eb', w2name:'Hely2', w2pct:0.40, w2color:'#16a34a', proceduresByPlace:{ w1:[], w2:[] }, itemsByPlace:{ w1:[], w2:[] }};
   let calcEntries = [];
   let calcFinalDirty = false;
+  let plannerEntries = [];
 
   const patientsIndex = new Map();
   const amountIndex = new Map();
@@ -218,6 +276,13 @@
   const contrast = (hex)=>{ const {r,g,b}=hexToRgb(hex||'#999'); const yiq=(r*299+g*587+b*114)/1000; return yiq>=128?'#000':'#fff'; };
   const lastKey = ()=> currentUID ? `dent_last_place_${currentUID}` : 'dent_last_place';
   const monthKey = d => { const dt=new Date(d); return isNaN(dt)?'':dt.toISOString().slice(0,7); };
+  const nextMonthValue = ()=>{
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const next = new Date(year, month + 1, 1);
+    return `${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}`;
+  };
   const safeMoney = v => Math.max(0, Math.round(+v || 0));
   const safeQty = v => Math.max(1, Math.round(+v || 1));
   const createCalcId = () => `${Date.now()}_${Math.random().toString(36).slice(2,10)}`;
@@ -292,26 +357,42 @@
     const slot = currentSlot();
     const items = sanitizeItems(settings.itemsByPlace?.[slot] || []);
     calcItemSelect.innerHTML = '';
+    plannerItemSelect.innerHTML = '';
     if(items.length===0){
-      const opt = document.createElement('option');
-      opt.value = '';
-      opt.textContent = 'Nincs árlistás tétel ennél a helyhez';
-      calcItemSelect.appendChild(opt);
+      const calcOpt = document.createElement('option');
+      calcOpt.value = '';
+      calcOpt.textContent = 'Nincs árlistás tétel ennél a helyhez';
+      calcItemSelect.appendChild(calcOpt);
+      const plannerOpt = document.createElement('option');
+      plannerOpt.value = '';
+      plannerOpt.textContent = 'Nincs árlistás tétel ennél a helyhez';
+      plannerItemSelect.appendChild(plannerOpt);
       calcAddBtn.disabled = true;
+      plannerAddBtn.disabled = true;
       return;
     }
     items.forEach(item=>{
-      const opt = document.createElement('option');
-      opt.value = item.id;
-      opt.textContent = `${item.name} — ${formatHuf(item.sell)} / tech: ${formatHuf(item.tech)}${item.noCommission ? ' · nem jutalékos' : ''}`;
-      calcItemSelect.appendChild(opt);
+      const label = `${item.name} — ${formatHuf(item.sell)} / tech: ${formatHuf(item.tech)}${item.noCommission ? ' · nem jutalékos' : ''}`;
+      const calcOpt = document.createElement('option');
+      calcOpt.value = item.id;
+      calcOpt.textContent = label;
+      calcItemSelect.appendChild(calcOpt);
+      const plannerOpt = document.createElement('option');
+      plannerOpt.value = item.id;
+      plannerOpt.textContent = label;
+      plannerItemSelect.appendChild(plannerOpt);
     });
     calcAddBtn.disabled = false;
+    plannerAddBtn.disabled = false;
   }
   function getCurrentCalcSourceItems(){ return sanitizeItems(settings.itemsByPlace?.[currentSlot()] || []); }
   function getSelectedCalcItem(){
     const items = getCurrentCalcSourceItems();
     return items.find(item => item.id === calcItemSelect.value) || null;
+  }
+  function getSelectedPlannerItem(){
+    const items = getCurrentCalcSourceItems();
+    return items.find(item => item.id === plannerItemSelect.value) || null;
   }
   function getModeSuffix(mode){
     if(mode === 'advance') return ' (előleg)';
@@ -404,6 +485,74 @@
     if(!calcFinalDirty) calcFinalAmount.value = String(netTotal);
   }
 
+  function renderPlannerRows(){
+    plannerRows.innerHTML = '';
+    plannerEmpty.classList.toggle('hide', plannerEntries.length>0);
+    plannerEntries.forEach(entry=>{
+      const row = document.createElement('div');
+      row.className = 'calc-row';
+      row.innerHTML = `
+        <div class="calc-grid">
+          <div><label>Tétel</label><input value="${escapeHtml(entry.name)}" data-planner-field="name" data-planner-id="${entry.id}"><div class="muted" style="margin-top:6px">${entry.noCommission ? 'Nem jutalékos tétel' : 'Jutalékos tétel'}</div></div>
+          <div><label>Db</label><input type="number" min="1" step="1" inputmode="numeric" value="${entry.qty}" data-planner-field="qty" data-planner-id="${entry.id}"></div>
+          <div><label>Típus</label><select data-planner-field="mode" data-planner-id="${entry.id}">
+            <option value="normal" ${entry.mode==='normal'?'selected':''}>Normál</option>
+            <option value="advance" ${entry.mode==='advance'?'selected':''}>Előleg</option>
+            <option value="delivery" ${entry.mode==='delivery'?'selected':''}>Átadás</option>
+          </select></div>
+          <div><label>Eladási ár / db</label><input type="number" min="0" step="1" inputmode="numeric" value="${entry.sell}" data-planner-field="sell" data-planner-id="${entry.id}"></div>
+          <div><label>Technikai ár / db</label><input type="number" min="0" step="1" inputmode="numeric" value="${entry.tech}" data-planner-field="tech" data-planner-id="${entry.id}"></div>
+          <div><label style="display:flex;align-items:center;gap:10px;color:var(--text);font-size:14px"><input type="checkbox" data-planner-field="noCommission" data-planner-id="${entry.id}" ${entry.noCommission ? 'checked' : ''} style="width:auto;min-width:18px;height:18px;padding:0;appearance:auto;-webkit-appearance:checkbox"> Nem jutalékos</label></div>
+          <div class="calc-actions"><div class="muted" style="width:100%;text-align:right">Várható bevétel: ${formatHuf(getRowCommissionBase(entry))}</div><button class="btn" type="button" data-planner-del="${entry.id}">Törlés</button></div>
+        </div>`;
+      plannerRows.appendChild(row);
+    });
+
+    plannerRows.querySelectorAll('[data-planner-id]').forEach(input=>{
+      const handler = e=>{
+        const id = e.target.dataset.plannerId;
+        const field = e.target.dataset.plannerField;
+        const entry = plannerEntries.find(x => x.id === id);
+        if(!entry) return;
+        if(field === 'name') entry.name = (e.target.value || '').trim();
+        if(field === 'qty') entry.qty = safeQty(e.target.value);
+        if(field === 'mode') entry.mode = e.target.value || 'normal';
+        if(field === 'sell') entry.sell = safeMoney(e.target.value);
+        if(field === 'tech') entry.tech = safeMoney(e.target.value);
+        if(field === 'noCommission') entry.noCommission = !!e.target.checked;
+        renderPlanner();
+      };
+      input.addEventListener('input', handler);
+      input.addEventListener('change', handler);
+    });
+
+    plannerRows.querySelectorAll('[data-planner-del]').forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        const id = e.target.dataset.plannerDel;
+        plannerEntries = plannerEntries.filter(x => x.id !== id);
+        renderPlanner();
+      });
+    });
+  }
+
+  function renderPlanner(){
+    renderPlannerRows();
+    const sellTotal = plannerEntries.reduce((sum, item)=> sum + getAdjustedSell(item), 0);
+    const techTotal = plannerEntries.reduce((sum, item)=> sum + getAdjustedTech(item), 0);
+    const netTotal = plannerEntries.reduce((sum, item)=> sum + getRowCommissionBase(item), 0);
+    plannerSellTotal.textContent = formatHuf(sellTotal);
+    plannerTechTotal.textContent = formatHuf(techTotal);
+    plannerNetTotal.textContent = formatHuf(netTotal);
+  }
+
+  function resetPlanner(){
+    plannerEntries = [];
+    plannerQty.value = '1';
+    if(!plannerMonth.value) plannerMonth.value = nextMonthValue();
+    renderCalcItemOptions();
+    renderPlanner();
+  }
+
   function resetCalculator(keepFinalDirty=false){
     calcEntries = [];
     if(!keepFinalDirty) calcFinalDirty = false;
@@ -418,6 +567,12 @@
     if(currentUID) localStorage.setItem(lastKey(), workplaceEl.value);
     renderQuickProcedures();
     resetCalculator();
+    resetPlanner();
+  });
+
+  plannerToggle.addEventListener('click', ()=>{
+    const open = plannerCard.classList.toggle('open');
+    plannerToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
 
   calcAddBtn.addEventListener('click', ()=>{
@@ -427,6 +582,16 @@
     calcQty.value = '1';
     renderCalculator();
   });
+
+  plannerAddBtn.addEventListener('click', ()=>{
+    const item = getSelectedPlannerItem();
+    if(!item) return;
+    plannerEntries.push({id: createCalcId(), sourceId: item.id, name: item.name, qty: safeQty(plannerQty.value), mode: 'normal', sell: safeMoney(item.sell), tech: safeMoney(item.tech), noCommission: !!item.noCommission});
+    plannerQty.value = '1';
+    renderPlanner();
+  });
+
+  plannerResetBtn.addEventListener('click', resetPlanner);
 
   calcFinalAmount.addEventListener('input', ()=>{
     calcFinalDirty = true;
@@ -447,6 +612,7 @@
     if(isLogged){
       showApp();
       dateEl.value=new Date().toISOString().slice(0,10);
+      plannerMonth.value = nextMonthValue();
       loadSettingsAndBindWorkplaces().finally(hideLoader);
       patientEl.focus();
     } else {
@@ -506,6 +672,7 @@
     bindWorkplaceOptions();
     renderQuickProcedures();
     resetCalculator();
+    resetPlanner();
   }
 
   function clearForm(){
@@ -518,6 +685,7 @@
     setSelectBG(workplaceEl.value);
     renderQuickProcedures();
     resetCalculator();
+    resetPlanner();
     patientEl.focus();
     refreshAmountDatalist();
   }
