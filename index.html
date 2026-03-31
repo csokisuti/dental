@@ -64,15 +64,32 @@
   .planner-card.open .planner-chevron{transform:rotate(180deg)}
   .planner-body{display:none;margin-top:12px}
   .planner-card.open .planner-body{display:block}
+  .planner-top-grid{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,1fr) auto;gap:10px;align-items:end}
+  .planner-second-grid{display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:10px;align-items:end;margin-top:10px}
+  .planner-btn-stack{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+  .planner-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;align-items:end}
+  .planner-name{grid-column:1 / 3}
+  .planner-qty{grid-column:3 / 4}
+  .planner-mode{grid-column:4 / 5}
+  .planner-sell{grid-column:5 / 6}
+  .planner-tech{grid-column:6 / 7}
+  .planner-flag{grid-column:1 / 4}
+  .planner-side{grid-column:4 / 7;display:flex;justify-content:space-between;align-items:center;gap:10px;min-width:0}
+  .planner-income{color:var(--muted);text-align:right;font-size:14px;white-space:nowrap}
   .nav .btn{min-width:0}
   @media (max-width:760px){
-    .row,.row3,.calc-grid,.calc-summary{grid-template-columns:1fr}
+    .row,.row3,.calc-grid,.calc-summary,.planner-top-grid,.planner-second-grid,.planner-grid{grid-template-columns:1fr}
     .layout{padding:16px}
     .topbar{flex-direction:column;align-items:stretch}
     .topbar h1{margin-bottom:0}
     .nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
     .nav .btn{width:100%;font-size:15px;padding:12px 10px}
     .calc-actions button{flex:1}
+    .planner-name,.planner-qty,.planner-mode,.planner-sell,.planner-tech,.planner-flag,.planner-side{grid-column:auto}
+    .planner-side{flex-direction:column;align-items:stretch}
+    .planner-income{text-align:left;white-space:normal}
+    .planner-btn-stack{flex-direction:column;align-items:stretch}
+    .planner-btn-stack .btn{width:100%}
   }
 </style>
 </head>
@@ -168,15 +185,15 @@
       </button>
 
       <div class="planner-body" id="plannerBody">
-        <div class="row3">
+        <div class="planner-top-grid">
           <div><label>Tervezett hónap</label><input type="month" id="plannerMonth"></div>
           <div><label>Tétel</label><select id="plannerItemSelect"></select></div>
           <div style="display:flex;align-items:flex-end"><button class="btn" id="plannerAddBtn" type="button" style="width:100%">Tétel hozzáadása</button></div>
         </div>
 
-        <div class="row" style="margin-top:10px">
+        <div class="planner-second-grid">
           <div><label>Darab</label><input type="number" id="plannerQty" min="1" step="1" inputmode="numeric" value="1"></div>
-          <div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap">
+          <div class="planner-btn-stack">
             <button class="btn" id="plannerSaveBtn" type="button">Aktuális terv mentése</button>
             <button class="btn" id="plannerDeleteSavedBtn" type="button">Mentett terv törlése / új kezdés</button>
             <button class="btn" id="plannerResetBtn" type="button">Aktuális nézet ürítése</button>
@@ -499,18 +516,18 @@
       const row = document.createElement('div');
       row.className = 'calc-row';
       row.innerHTML = `
-        <div class="calc-grid">
-          <div><label>Tétel</label><input value="${escapeHtml(entry.name)}" data-planner-field="name" data-planner-id="${entry.id}"><div class="muted" style="margin-top:6px">${entry.noCommission ? 'Nem jutalékos tétel' : 'Jutalékos tétel'}</div></div>
-          <div><label>Db</label><input type="number" min="1" step="1" inputmode="numeric" value="${entry.qty}" data-planner-field="qty" data-planner-id="${entry.id}"></div>
-          <div><label>Típus</label><select data-planner-field="mode" data-planner-id="${entry.id}">
+        <div class="planner-grid">
+          <div class="planner-name"><label>Tétel</label><input value="${escapeHtml(entry.name)}" data-planner-field="name" data-planner-id="${entry.id}"><div class="muted" style="margin-top:6px">${entry.noCommission ? 'Nem jutalékos tétel' : 'Jutalékos tétel'}</div></div>
+          <div class="planner-qty"><label>Db</label><input type="number" min="1" step="1" inputmode="numeric" value="${entry.qty}" data-planner-field="qty" data-planner-id="${entry.id}"></div>
+          <div class="planner-mode"><label>Típus</label><select data-planner-field="mode" data-planner-id="${entry.id}">
             <option value="normal" ${entry.mode==='normal'?'selected':''}>Normál</option>
             <option value="advance" ${entry.mode==='advance'?'selected':''}>Előleg</option>
             <option value="delivery" ${entry.mode==='delivery'?'selected':''}>Átadás</option>
           </select></div>
-          <div><label>Eladási ár / db</label><input type="number" min="0" step="1" inputmode="numeric" value="${entry.sell}" data-planner-field="sell" data-planner-id="${entry.id}"></div>
-          <div><label>Technikai ár / db</label><input type="number" min="0" step="1" inputmode="numeric" value="${entry.tech}" data-planner-field="tech" data-planner-id="${entry.id}"></div>
-          <div><label style="display:flex;align-items:center;gap:10px;color:var(--text);font-size:14px"><input type="checkbox" data-planner-field="noCommission" data-planner-id="${entry.id}" ${entry.noCommission ? 'checked' : ''} style="width:auto;min-width:18px;height:18px;padding:0;appearance:auto;-webkit-appearance:checkbox"> Nem jutalékos</label></div>
-          <div class="calc-actions"><div class="muted" style="width:100%;text-align:right">Várható bevétel: ${formatHuf(getRowCommissionBase(entry))}</div><button class="btn" type="button" data-planner-del="${entry.id}">Törlés</button></div>
+          <div class="planner-sell"><label>Eladási ár / db</label><input type="number" min="0" step="1" inputmode="numeric" value="${entry.sell}" data-planner-field="sell" data-planner-id="${entry.id}"></div>
+          <div class="planner-tech"><label>Technikai ár / db</label><input type="number" min="0" step="1" inputmode="numeric" value="${entry.tech}" data-planner-field="tech" data-planner-id="${entry.id}"></div>
+          <div class="planner-flag"><label style="display:flex;align-items:center;gap:10px;color:var(--text);font-size:14px"><input type="checkbox" data-planner-field="noCommission" data-planner-id="${entry.id}" ${entry.noCommission ? 'checked' : ''} style="width:auto;min-width:18px;height:18px;padding:0;appearance:auto;-webkit-appearance:checkbox"> Nem jutalékos</label></div>
+          <div class="planner-side"><div class="planner-income">Várható bevétel: ${formatHuf(getRowCommissionBase(entry))}</div><button class="btn" type="button" data-planner-del="${entry.id}">Törlés</button></div>
         </div>`;
       plannerRows.appendChild(row);
     });
