@@ -177,10 +177,13 @@
         <div class="row" style="margin-top:10px">
           <div><label>Darab</label><input type="number" id="plannerQty" min="1" step="1" inputmode="numeric" value="1"></div>
           <div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap">
-            <button class="btn" id="plannerResetBtn" type="button">Tervező ürítése</button>
+            <button class="btn" id="plannerSaveBtn" type="button">Aktuális terv mentése</button>
+            <button class="btn" id="plannerDeleteSavedBtn" type="button">Mentett terv törlése / új kezdés</button>
+            <button class="btn" id="plannerResetBtn" type="button">Aktuális nézet ürítése</button>
           </div>
         </div>
 
+        <div id="plannerSaveMsg" class="alert ok hide" style="margin-bottom:12px">A tervező aktuális állapota elmentve.</div>
         <div id="plannerRows" class="calc-list"></div>
         <div id="plannerEmpty" class="calc-empty">Nincs még hozzáadott tervezett tétel.</div>
         <div class="muted" style="margin-top:8px">A számítás ugyanazt a logikát követi, mint a pótlás kalkulátor: előlegnél fél eladási ár és teljes technikai levonás, átadásnál fél eladási ár technikai levonás nélkül.</div>
@@ -251,7 +254,10 @@
   const plannerItemSelect = document.getElementById('plannerItemSelect');
   const plannerQty = document.getElementById('plannerQty');
   const plannerAddBtn = document.getElementById('plannerAddBtn');
+  const plannerSaveBtn = document.getElementById('plannerSaveBtn');
+  const plannerDeleteSavedBtn = document.getElementById('plannerDeleteSavedBtn');
   const plannerResetBtn = document.getElementById('plannerResetBtn');
+  const plannerSaveMsg = document.getElementById('plannerSaveMsg');
   const plannerRows = document.getElementById('plannerRows');
   const plannerEmpty = document.getElementById('plannerEmpty');
   const plannerSellTotal = document.getElementById('plannerSellTotal');
@@ -275,6 +281,7 @@
   const hexToRgb = (hex)=>{ const h=hex.replace('#',''); const b=parseInt(h.length===3?h.split('').map(x=>x+x).join(''):h,16); return {r:(b>>16)&255,g:(b>>8)&255,b:b&255}; };
   const contrast = (hex)=>{ const {r,g,b}=hexToRgb(hex||'#999'); const yiq=(r*299+g*587+b*114)/1000; return yiq>=128?'#000':'#fff'; };
   const lastKey = ()=> currentUID ? `dent_last_place_${currentUID}` : 'dent_last_place';
+  const plannerSaveKey = ()=> currentUID ? `dent_saved_planner_${currentUID}` : 'dent_saved_planner';
   const monthKey = d => { const dt=new Date(d); return isNaN(dt)?'':dt.toISOString().slice(0,7); };
   const nextMonthValue = ()=>{
     const now = new Date();
@@ -545,10 +552,85 @@
     plannerNetTotal.textContent = formatHuf(netTotal);
   }
 
+
+  function showPlannerSaveMsg(textValue, isError=false){
+    plannerSaveMsg.textContent = textValue;
+    plannerSaveMsg.classList.remove('hide','ok','err');
+    plannerSaveMsg.classList.add(isError ? 'err' : 'ok');
+    clearTimeout(showPlannerSaveMsg._timer);
+    showPlannerSaveMsg._timer = setTimeout(()=>plannerSaveMsg.classList.add('hide'), 2200);
+  }
+
+  function serializePlannerEntries(){
+    return plannerEntries.map(entry => ({
+      id: createCalcId(),
+      sourceId: entry.sourceId || '',
+      name: (entry.name || '').trim(),
+      qty: safeQty(entry.qty),
+      mode: entry.mode || 'normal',
+      sell: safeMoney(entry.sell),
+      tech: safeMoney(entry.tech),
+      noCommission: !!entry.noCommission
+    })).filter(entry => entry.name);
+  }
+
+  function savePlannerSnapshot(){
+    if(!currentUID) return;
+    const payload = {
+      month: plannerMonth.value || nextMonthValue(),
+      workplace: workplaceEl.value || '',
+      entries: serializePlannerEntries(),
+      savedAt: Date.now()
+    };
+    localStorage.setItem(plannerSaveKey(), JSON.stringify(payload));
+    showPlannerSaveMsg('Az aktuális terv elmentve.');
+  }
+
+  function loadPlannerSnapshot(){
+    if(!currentUID) return false;
+    const raw = localStorage.getItem(plannerSaveKey());
+    if(!raw) return false;
+    try{
+      const parsed = JSON.parse(raw);
+      if(parsed && typeof parsed === 'object'){
+        if(parsed.workplace){
+          const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===parsed.workplace);
+          if(idx >= 0){
+            workplaceEl.selectedIndex = idx;
+            setSelectBG(workplaceEl.value);
+            renderQuickProcedures();
+            renderCalcItemOptions();
+          }
+        }
+        plannerMonth.value = parsed.month || nextMonthValue();
+        plannerEntries = (Array.isArray(parsed.entries) ? parsed.entries : []).map(entry => ({
+          id: createCalcId(),
+          sourceId: entry?.sourceId || '',
+          name: (entry?.name || '').trim(),
+          qty: safeQty(entry?.qty),
+          mode: entry?.mode || 'normal',
+          sell: safeMoney(entry?.sell),
+          tech: safeMoney(entry?.tech),
+          noCommission: !!entry?.noCommission
+        })).filter(entry => entry.name);
+        renderPlanner();
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+
+  function clearSavedPlanner(startNew=false){
+    localStorage.removeItem(plannerSaveKey());
+    resetPlanner();
+    if(startNew) showPlannerSaveMsg('A mentett terv törölve, indulhat az új tervezés.');
+  }
+
   function resetPlanner(){
     plannerEntries = [];
     plannerQty.value = '1';
     if(!plannerMonth.value) plannerMonth.value = nextMonthValue();
+    plannerSaveMsg.classList.add('hide');
     renderCalcItemOptions();
     renderPlanner();
   }
@@ -591,7 +673,12 @@
     renderPlanner();
   });
 
-  plannerResetBtn.addEventListener('click', resetPlanner);
+  plannerSaveBtn.addEventListener('click', savePlannerSnapshot);
+  plannerDeleteSavedBtn.addEventListener('click', ()=>clearSavedPlanner(true));
+  plannerResetBtn.addEventListener('click', ()=>{
+    resetPlanner();
+    showPlannerSaveMsg('Az aktuális nézet ürítve. A mentett terv ettől még megmarad.');
+  });
 
   calcFinalAmount.addEventListener('input', ()=>{
     calcFinalDirty = true;
@@ -673,6 +760,7 @@
     renderQuickProcedures();
     resetCalculator();
     resetPlanner();
+    loadPlannerSnapshot();
   }
 
   function clearForm(){
