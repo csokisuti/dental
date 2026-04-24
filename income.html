@@ -159,13 +159,19 @@
     </div>
     <div class="row" style="margin-top:10px">
       <div>
-        <label>Páciens fizette (HUF)</label>
+        <label>Páciens fizette / kedvezményes ár (HUF)</label>
         <input id="editGrossAmount" type="number" min="0" step="1" inputmode="numeric">
       </div>
       <div>
-        <label>Jutalékalap (HUF)</label>
+        <label>Kedvezmény (%)</label>
+        <input id="editDiscountPercent" type="number" min="0" max="99" step="0.1" inputmode="decimal">
+      </div>
+      <div>
+        <label>Jutalékalap / eredeti ár (HUF)</label>
         <input id="editAmount" type="number" min="0" step="1" inputmode="numeric">
       </div>
+    </div>
+    <div class="row2" style="margin-top:10px">
       <div>
         <label>Munkahely</label>
         <select id="editWorkplace"></select>
@@ -189,6 +195,7 @@
             <th>Beavatkozás</th>
             <th>Munkahely</th>
             <th class="right">Páciens fizette</th>
+            <th class="right">Kedv.</th>
             <th class="right">Jutalékalap</th>
             <th class="right">%-om</th>
             <th class="right">Saját</th>
@@ -201,6 +208,7 @@
             <td></td>
             <td colspan="4" class="right total">Összesen (szűrt):</td>
             <td class="right total" id="sumGross">0</td>
+            <td></td>
             <td class="right total" id="sumBase">0</td>
             <td></td>
             <td class="right total" id="sumOwn">0</td>
@@ -260,6 +268,7 @@
   const editPatient = document.getElementById('editPatient');
   const editProcedure = document.getElementById('editProcedure');
   const editGrossAmount = document.getElementById('editGrossAmount');
+  const editDiscountPercent = document.getElementById('editDiscountPercent');
   const editAmount = document.getElementById('editAmount');
   const editWorkplace = document.getElementById('editWorkplace');
   const saveEdit = document.getElementById('saveEdit');
@@ -278,6 +287,18 @@
   const fmt = n => (n||0).toLocaleString('hu-HU',{maximumFractionDigits:0});
   const monthKey = d => { const dt=new Date(d); return isNaN(dt)?'':dt.toISOString().slice(0,7); };
   function pctFor(place){ if(place===settings.w1name) return +settings.w1pct||0; if(place===settings.w2name) return +settings.w2pct||0; return 0; }
+  function safeMoney(v){ return Math.max(0, Math.round(+v || 0)); }
+  function calculateOriginalFromDiscount(paidValue, discountValue){
+    const paid = safeMoney(paidValue);
+    const discount = Math.max(0, Math.min(99, +discountValue || 0));
+    if(!paid) return 0;
+    if(!discount) return paid;
+    return Math.round(paid / (1 - discount / 100));
+  }
+  function updateEditOriginalFromDiscount(){
+    const calculated = calculateOriginalFromDiscount(editGrossAmount.value, editDiscountPercent.value);
+    editAmount.value = calculated ? String(calculated) : '';
+  }
 
   function bindWorkplaceSelect(select, withAll=false){
     select.innerHTML = '';
@@ -449,6 +470,7 @@
         <td>${e.procedure||''}</td>
         <td>${pill}</td>
         <td class="right">${fmt(grossPaid)}</td>
+        <td class="right">${e.discountPercent ? (Math.round((+e.discountPercent||0)*10)/10) + '%' : '-'}</td>
         <td class="right">${fmt(localBase)}</td>
         <td class="right">${localPct!=null? Math.round(localPct*100) + '%' : '-'}</td>
         <td class="right">${fmt(localOwn)}</td>
@@ -476,6 +498,7 @@
       editPatient.value = it.patient || '';
       editProcedure.value = it.procedure || '';
       editGrossAmount.value = it.grossAmount || it.amount || 0;
+      editDiscountPercent.value = it.discountPercent || '';
       editAmount.value = it.amount || 0;
       bindWorkplaceSelect(editWorkplace);
       const idx = Array.from(editWorkplace.options).findIndex(o=>o.value===it.workplace);
@@ -501,6 +524,10 @@
     editErr.classList.add('hide'); editMsg.classList.add('hide');
   };
 
+  editGrossAmount.addEventListener('input', updateEditOriginalFromDiscount);
+  editDiscountPercent.addEventListener('input', updateEditOriginalFromDiscount);
+  editDiscountPercent.addEventListener('change', updateEditOriginalFromDiscount);
+
   async function nextMonthlySeq(uid, month){
     const counterRef = doc(db,'users',uid,'counters',month);
     const seq = await runTransaction(db, async (tx)=>{
@@ -517,12 +544,16 @@
     if(!editingId) return;
     editMsg.classList.add('hide'); editErr.classList.add('hide'); editErr.textContent='';
 
+    updateEditOriginalFromDiscount();
+    const discountPercent = Math.max(0, Math.min(99, +editDiscountPercent.value || 0));
     const payload = {
       date: editDate.value,
       patient: editPatient.value.trim(),
       procedure: editProcedure.value.trim(),
-      grossAmount: Math.max(0, Math.round(+editGrossAmount.value||0)),
-      amount: Math.max(0, Math.round(+editAmount.value||0)),
+      grossAmount: safeMoney(editGrossAmount.value),
+      amount: safeMoney(editAmount.value),
+      discountPercent,
+      originalAmount: safeMoney(editAmount.value),
       workplace: editWorkplace.value
     };
     if(!payload.date || !payload.patient || !payload.procedure || !payload.grossAmount || !payload.amount || !payload.workplace){
