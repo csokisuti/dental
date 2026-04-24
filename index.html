@@ -138,9 +138,15 @@
     </div>
 
     <div class="row">
-      <div><label>Fizetett összeg (HUF)</label><input type="number" id="amount" min="0" step="1" inputmode="numeric" placeholder="pl. 25000" list="amountList"><datalist id="amountList"></datalist></div>
+      <div><label>Kedvezményes / fizetett összeg (HUF)</label><input type="number" id="amount" min="0" step="1" inputmode="numeric" placeholder="pl. 80000" list="amountList"><datalist id="amountList"></datalist></div>
+      <div><label>Kedvezmény (%)</label><input type="number" id="discountPercent" min="0" max="99" step="0.1" inputmode="decimal" placeholder="pl. 20"></div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div><label>Eredeti ár / jutalékalap (HUF)</label><input type="number" id="originalAmount" min="0" step="1" inputmode="numeric" placeholder="automatikusan számolva"></div>
       <div><label>Munkahely</label><select id="workplace"></select></div>
     </div>
+    <div class="muted" style="margin-top:6px">Ha nincs kedvezmény, hagyd üresen vagy 0%-on. Kedvezménynél a jutalék az eredeti árból számolódik.</div>
 
     <div class="card" style="margin-top:16px;padding:14px">
       <div class="calc-head">
@@ -247,6 +253,8 @@
   const procedureEl = document.getElementById('procedure');
   const quickWrap = document.getElementById('quickProcedures');
   const amountEl = document.getElementById('amount');
+  const discountPercentEl = document.getElementById('discountPercent');
+  const originalAmountEl = document.getElementById('originalAmount');
   const amountListEl = document.getElementById('amountList');
   const workplaceEl = document.getElementById('workplace');
   const resetBtn = document.getElementById('resetBtn');
@@ -311,6 +319,17 @@
   const safeQty = v => Math.max(1, Math.round(+v || 1));
   const createCalcId = () => `${Date.now()}_${Math.random().toString(36).slice(2,10)}`;
   const formatHuf = n => `${safeMoney(n).toLocaleString('hu-HU')} Ft`;
+  function calculateOriginalFromDiscount(paidValue, discountValue){
+    const paid = safeMoney(paidValue);
+    const discount = Math.max(0, Math.min(99, +discountValue || 0));
+    if(!paid) return 0;
+    if(!discount) return paid;
+    return Math.round(paid / (1 - discount / 100));
+  }
+  function updateOriginalFromDiscount(){
+    const calculated = calculateOriginalFromDiscount(amountEl.value, discountPercentEl.value);
+    originalAmountEl.value = calculated ? String(calculated) : '';
+  }
 
   function setSelectBG(placeName){
     const color = (placeName===settings.w1name) ? settings.w1color : (placeName===settings.w2name) ? settings.w2color : '#ffffff';
@@ -706,6 +725,8 @@
     procedureEl.value = buildCalcProcedureText();
     procedureEl.dispatchEvent(new Event('input'));
     amountEl.value = String(safeMoney(calcFinalAmount.value));
+    discountPercentEl.value = '';
+    updateOriginalFromDiscount();
     amountEl.dispatchEvent(new Event('input'));
   });
 
@@ -781,7 +802,7 @@
   }
 
   function clearForm(){
-    patientEl.value=''; procedureEl.value=''; amountEl.value=''; dateEl.value = new Date().toISOString().slice(0,10);
+    patientEl.value=''; procedureEl.value=''; amountEl.value=''; discountPercentEl.value=''; originalAmountEl.value=''; dateEl.value = new Date().toISOString().slice(0,10);
     const last = localStorage.getItem(lastKey());
     if(last){
       const idx = Array.from(workplaceEl.options).findIndex(o=>o.value===last);
@@ -833,6 +854,9 @@
     for(const [amt] of pairs){ const opt = document.createElement('option'); opt.value = String(amt); amountListEl.appendChild(opt); }
   }
   procedureEl.addEventListener('input', refreshAmountDatalist);
+  amountEl.addEventListener('input', updateOriginalFromDiscount);
+  discountPercentEl.addEventListener('input', updateOriginalFromDiscount);
+  discountPercentEl.addEventListener('change', updateOriginalFromDiscount);
   function escapeHtml(str){ return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
 
   saveBtn.onclick = async ()=>{
@@ -841,8 +865,12 @@
     saveErr.textContent = '';
 
     const sellTotal = calcEntries.reduce((sum, item)=> sum + getAdjustedSell(item), 0);
-    const grossAmount = calcEntries.length > 0 ? Math.max(0, Math.round(sellTotal)) : Math.max(0, Math.round(+amountEl.value||0));
-    const payload = {date: dateEl.value, patient: (patientEl.value||'').trim(), procedure: (procedureEl.value||'').trim(), amount: Math.max(0, Math.round(+amountEl.value||0)), grossAmount, workplace: workplaceEl.value || null, pctAtSave: null, ownAtSave: null, createdAt: Date.now()};
+    updateOriginalFromDiscount();
+    const paidAmount = safeMoney(amountEl.value);
+    const discountPercent = Math.max(0, Math.min(99, +discountPercentEl.value || 0));
+    const originalAmount = safeMoney(originalAmountEl.value || amountEl.value);
+    const grossAmount = (calcEntries.length > 0 && !discountPercent) ? Math.max(0, Math.round(sellTotal)) : paidAmount;
+    const payload = {date: dateEl.value, patient: (patientEl.value||'').trim(), procedure: (procedureEl.value||'').trim(), amount: originalAmount, grossAmount, discountPercent, originalAmount, workplace: workplaceEl.value || null, pctAtSave: null, ownAtSave: null, createdAt: Date.now()};
 
     if(!payload.date || !payload.patient || !payload.procedure || !payload.amount || !payload.workplace){
       saveErr.textContent = 'Dátum, páciens, beavatkozás, összeg és munkahely kötelező.';
