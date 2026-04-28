@@ -48,6 +48,9 @@
   .hide{display:none !important}
   .ok{padding:8px 10px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
   .err{padding:8px 10px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .summary-box{border:1px solid var(--line);border-radius:12px;background:#f8fafc;padding:12px}
+  .summary-box strong{display:block;font-size:22px;margin-top:4px}
   .loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;transition:opacity .25s ease;padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
   .loader.hide{opacity:0;pointer-events:none}
   .loader-inner{display:flex;flex-direction:column;align-items:center;gap:12px}
@@ -60,6 +63,7 @@
     .layout{padding:16px}
     .row{grid-template-columns:1fr}
     .row2{grid-template-columns:1fr}
+    .summary-grid{grid-template-columns:1fr}
     th,td{padding:8px}
     .topbar{flex-direction:column;align-items:stretch}
     .topbar h1{margin-bottom:0}
@@ -109,6 +113,24 @@
       <button class="btn" id="registerBtn">Regisztráció</button>
     </div>
     <div class="muted" id="authMsg"></div>
+  </div>
+
+  <div class="card hide" id="topSummary">
+    <h2>Aktuális összesen</h2>
+    <div class="summary-grid">
+      <div class="summary-box">
+        <div class="muted">Páciens fizette</div>
+        <strong id="topSumGross">0</strong>
+      </div>
+      <div class="summary-box">
+        <div class="muted">Jutalékalap</div>
+        <strong id="topSumBase">0</strong>
+      </div>
+      <div class="summary-box">
+        <div class="muted">Saját bevétel</div>
+        <strong id="topSumOwn">0</strong>
+      </div>
+    </div>
   </div>
 
   <div class="card hide" id="filters">
@@ -236,6 +258,7 @@
   const hideLoader = ()=> loader.classList.add('hide');
 
   const authCard = document.getElementById('authCard');
+  const topSummary = document.getElementById('topSummary');
   const filters = document.getElementById('filters');
   const listCard = document.getElementById('listCard');
   const editor = document.getElementById('editor');
@@ -255,6 +278,9 @@
   const sumGrossEl = document.getElementById('sumGross');
   const sumBaseEl = document.getElementById('sumBase');
   const sumOwnEl = document.getElementById('sumOwn');
+  const topSumGrossEl = document.getElementById('topSumGross');
+  const topSumBaseEl = document.getElementById('topSumBase');
+  const topSumOwnEl = document.getElementById('topSumOwn');
 
   const editDate = document.getElementById('editDate');
   const editPatient = document.getElementById('editPatient');
@@ -352,6 +378,7 @@
   onAuthStateChanged(auth, async user=>{
     if(!user){
       authCard.classList.remove('hide');
+      topSummary.classList.add('hide');
       filters.classList.add('hide');
       listCard.classList.add('hide');
       editor.classList.add('hide');
@@ -360,6 +387,7 @@
     }
     uid = user.uid;
     authCard.classList.add('hide');
+    topSummary.classList.remove('hide');
     filters.classList.remove('hide');
     listCard.classList.remove('hide');
     filterMonth.value = new Date().toISOString().slice(0, 7);
@@ -461,6 +489,10 @@
     sumGrossEl.textContent = fmt(sumG);
     sumBaseEl.textContent = fmt(sumB);
     sumOwnEl.textContent = fmt(sumO);
+
+    topSumGrossEl.textContent = fmt(sumG);
+    topSumBaseEl.textContent = fmt(sumB);
+    topSumOwnEl.textContent = fmt(sumO);
   }
 
   document.getElementById('entriesTable').addEventListener('click', async (ev)=>{
@@ -556,7 +588,6 @@
       editErr.classList.remove('hide');
     }
   };
-
 </script>
 </body>
 </html>
