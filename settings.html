@@ -10,36 +10,35 @@
 <meta name="theme-color" content="#2563eb">
 <title>Beállítások – Fogorvosi bevételkövető</title>
 <style>
-  :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--shadow:0 6px 25px rgba(15,23,42,.08)}
+  :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--danger:#ef4444;--warn:#f59e0b;--shadow:0 6px 25px rgba(15,23,42,.08)}
   *{box-sizing:border-box}
   html,body{height:100%}
   html{-webkit-text-size-adjust:100%}
   body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-  .layout{max-width:900px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+  .layout{max-width:1000px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
   h1{margin:0 0 6px;font-size:20px}
   h2{margin:0 0 10px;font-size:16px}
+  h3{margin:0 0 8px;font-size:15px}
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-  input,.row input,.row select,.row3 input,.row3 select,textarea{
-    width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;
-    font-size:16px;appearance:none;-webkit-appearance:none;
-  }
-  .row select,.row3 select{
-    background-image:linear-gradient(45deg,transparent 50%,#94a3b8 50%),linear-gradient(135deg,#94a3b8 50%,transparent 50%),linear-gradient(to right,transparent,transparent);
-    background-position:calc(100% - 16px) 50%,calc(100% - 12px) 50%,0 0;
-    background-size:6px 6px,6px 6px,100% 100%;background-repeat:no-repeat;padding-right:36px;
-  }
+  input,.row input,.row select,.row3 input,.row3 select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:16px;appearance:none;-webkit-appearance:none}
+  input[type="checkbox"]{width:auto;appearance:auto;-webkit-appearance:auto;padding:0;border:0;border-radius:0}
+  .row select,.row3 select{background-image:linear-gradient(45deg,transparent 50%,#94a3b8 50%),linear-gradient(135deg,#94a3b8 50%,transparent 50%),linear-gradient(to right,transparent,transparent);background-position:calc(100% - 16px) 50%,calc(100% - 12px) 50%,0 0;background-size:6px 6px,6px 6px,100% 100%;background-repeat:no-repeat;padding-right:36px}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
   .nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;text-decoration:none;color:inherit;font-size:16px;min-height:44px;touch-action:manipulation;text-align:center}
   .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+  .btn.warn{background:var(--warn);border-color:var(--warn);color:#fff}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
   .muted{color:var(--muted);font-size:12px}
   .pill{display:inline-block;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-weight:600}
   .hide{display:none !important}
   .ok{padding:10px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
   .err{padding:10px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d}
+  .warnbox{padding:10px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;color:#92400e}
   .chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
   .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;font-weight:600;user-select:none}
   .chip .mini{font-size:12px;opacity:.8;cursor:pointer}
@@ -63,7 +62,41 @@
   .item-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
   .item-actions button{padding:10px 12px;min-height:40px}
   .empty{padding:12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);text-align:center}
-  .nav .btn{min-width:0}
+  .collapse{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;margin-top:16px}
+  .collapse summary{cursor:pointer;list-style:none;padding:14px 16px;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f8fafc}
+  .collapse summary::-webkit-details-marker{display:none}
+  .collapse summary:after{content:"Lenyitás";font-size:12px;font-weight:700;color:var(--muted)}
+  .collapse[open] summary:after{content:"Bezárás"}
+  .collapse-body{padding:16px;border-top:1px solid var(--line)}
+  .patient-tools{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:end;margin-top:10px}
+  .patient-actions{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:end;margin-top:10px}
+  .patient-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+  .summary-box{border:1px solid var(--line);border-radius:12px;background:#f8fafc;padding:12px}
+  .summary-box strong{display:block;font-size:20px;margin-top:4px}
+  .patient-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .patient-row{border:1px solid var(--line);border-radius:12px;background:#fff;padding:12px;display:grid;grid-template-columns:auto minmax(0,1.4fr) repeat(3,minmax(90px,.5fr)) auto;gap:10px;align-items:center}
+  .patient-row.selected{border-color:#bfdbfe;background:#eff6ff}
+  .patient-name{font-weight:800;word-break:break-word}
+  .patient-meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .patient-num{text-align:right}
+  .patient-num strong{display:block}
+  .patient-detail,.preview-box{border:1px solid var(--line);border-radius:12px;background:#fff;margin-top:12px;overflow:hidden}
+  .patient-detail-head,.preview-head{padding:12px 14px;border-bottom:1px solid var(--line);background:#f8fafc;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+  .ktable{width:100%;overflow:auto;-webkit-overflow-scrolling:touch}
+  table{width:100%;border-collapse:collapse;background:#fff}
+  th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{font-size:12px;color:var(--muted);font-weight:700;background:#f8fafc}
+  .right{text-align:right}
+  .similar-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .similar-card{border:1px solid #fde68a;background:#fffbeb;border-radius:12px;padding:10px;color:#92400e}
+  .similar-card button{margin-top:8px}
+  .small-check{width:auto;min-width:18px;height:18px;appearance:auto;-webkit-appearance:checkbox}
+  @media (max-width:900px){
+    .patient-row{grid-template-columns:auto minmax(0,1fr) auto}
+    .patient-num{display:none}
+    .patient-summary{grid-template-columns:1fr 1fr}
+    .patient-tools,.patient-actions{grid-template-columns:1fr}
+  }
   @media (max-width:760px){
     .layout{padding:16px}
     .row,.row3,.item-grid{grid-template-columns:1fr}
@@ -75,6 +108,9 @@
     .nav .btn{width:100%;font-size:15px;padding:12px 10px}
     .item-actions{justify-content:stretch}
     .item-actions button{flex:1}
+    .patient-summary{grid-template-columns:1fr}
+    .patient-row{grid-template-columns:auto minmax(0,1fr)}
+    .patient-row .btn{grid-column:1 / -1}
   }
 </style>
 </head>
@@ -226,6 +262,57 @@
 
     <div id="itemList" class="item-list"></div>
 
+    <details class="collapse" id="patientsPanel">
+      <summary>👤 Páciensek kezelése</summary>
+      <div class="collapse-body">
+        <div class="muted">A módosítás csak a bejegyzések páciensnév mezőjét írja át. Összeghez, dátumhoz, munkahelyhez és beavatkozáshoz nem nyúl.</div>
+
+        <div id="patientMsg" style="margin-top:10px" class="muted"></div>
+
+        <div class="patient-summary">
+          <div class="summary-box">
+            <div class="muted">Páciensnév</div>
+            <strong id="patientCount">0</strong>
+          </div>
+          <div class="summary-box">
+            <div class="muted">Bejegyzés</div>
+            <strong id="patientEntryCount">0</strong>
+          </div>
+          <div class="summary-box">
+            <div class="muted">Kijelölve</div>
+            <strong id="patientSelectedCount">0</strong>
+          </div>
+          <div class="summary-box">
+            <div class="muted">Kijelölt bejegyzés</div>
+            <strong id="patientSelectedEntryCount">0</strong>
+          </div>
+        </div>
+
+        <div class="patient-tools">
+          <div>
+            <label>Páciens keresése</label>
+            <input id="patientSearch" placeholder="Név keresése">
+          </div>
+          <button class="btn" id="reloadPatientsBtn">Lista frissítése</button>
+          <button class="btn" id="clearPatientSelectionBtn">Kijelölés törlése</button>
+        </div>
+
+        <div class="patient-actions">
+          <div>
+            <label>Végleges / javított név</label>
+            <input id="patientTargetName" placeholder="Pl. Kovács Anna">
+          </div>
+          <button class="btn warn" id="previewPatientMergeBtn">Előnézet</button>
+          <button class="btn primary" id="applyPatientMergeBtn" disabled>Véglegesítés</button>
+        </div>
+
+        <div id="patientDuplicateHints"></div>
+        <div id="patientPreview"></div>
+        <div id="patientDetail"></div>
+        <div id="patientList" class="patient-list"></div>
+      </div>
+    </details>
+
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap">
       <button class="btn primary" id="saveBtn">Beállítások mentése</button>
     </div>
@@ -235,7 +322,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
@@ -294,6 +381,23 @@
   const tabW1 = document.getElementById('tabW1');
   const tabW2 = document.getElementById('tabW2');
 
+  const patientsPanel = document.getElementById('patientsPanel');
+  const patientMsg = document.getElementById('patientMsg');
+  const patientCount = document.getElementById('patientCount');
+  const patientEntryCount = document.getElementById('patientEntryCount');
+  const patientSelectedCount = document.getElementById('patientSelectedCount');
+  const patientSelectedEntryCount = document.getElementById('patientSelectedEntryCount');
+  const patientSearch = document.getElementById('patientSearch');
+  const reloadPatientsBtn = document.getElementById('reloadPatientsBtn');
+  const clearPatientSelectionBtn = document.getElementById('clearPatientSelectionBtn');
+  const patientTargetName = document.getElementById('patientTargetName');
+  const previewPatientMergeBtn = document.getElementById('previewPatientMergeBtn');
+  const applyPatientMergeBtn = document.getElementById('applyPatientMergeBtn');
+  const patientDuplicateHints = document.getElementById('patientDuplicateHints');
+  const patientPreview = document.getElementById('patientPreview');
+  const patientDetail = document.getElementById('patientDetail');
+  const patientList = document.getElementById('patientList');
+
   let uid = null;
   let procsByPlace = { w1: [], w2: [] };
   let itemsByPlace = { w1: [], w2: [] };
@@ -301,9 +405,16 @@
   let editingItemIndex = -1;
   let dragIndex = -1;
   let activeSlot = 'w1';
+  let patientEntries = [];
+  let patientGroups = [];
+  let selectedPatients = new Set();
+  let pendingPatientMerge = null;
+  let patientsLoaded = false;
 
   const safeMoney = v => Math.max(0, Math.round(+v || 0));
   const createItemId = () => `${Date.now()}_${Math.random().toString(36).slice(2,10)}`;
+  const fmt = n => (n||0).toLocaleString('hu-HU',{maximumFractionDigits:0});
+  const escapeHtml = str => String(str ?? '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 
   const applyPreview = ()=>{
     tabW1.textContent = w1name.value?.trim() || 'Hely1';
@@ -315,6 +426,7 @@
     p2.style.background = w2color.value || '#16a34a';
     p2.style.color = '#fff';
   };
+
   [w1name,w2name,w1color,w2color].forEach(el=>el.addEventListener('input', applyPreview));
 
   function resetProcEditor(){
@@ -386,6 +498,7 @@
 
       const mv = document.createElement('span');
       mv.className='mv';
+
       const left = document.createElement('button');
       left.type='button';
       left.textContent='◀︎';
@@ -395,6 +508,7 @@
       right.type='button';
       right.textContent='▶︎';
       right.onclick = ()=>{ moveItem(list, idx, Math.min(list.length-1,idx+1)); renderProcedures(); };
+
       mv.appendChild(left);
       mv.appendChild(right);
 
@@ -429,10 +543,12 @@
         chip.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
       });
+
       chip.addEventListener('dragend', ()=>{
         dragIndex = -1;
         chip.classList.remove('dragging');
       });
+
       chip.addEventListener('dragover', (e)=>{
         e.preventDefault();
         const overIndex = Number(chip.dataset.index);
@@ -458,6 +574,7 @@
     resetProcEditor();
     renderProcedures();
   }
+
   procAddBtn.onclick = addFromInput;
 
   procSaveEditBtn.onclick = ()=>{
@@ -470,6 +587,7 @@
       renderProcedures();
     }
   };
+
   procCancelEditBtn.onclick = resetProcEditor;
 
   function sanitizeItems(list){
@@ -567,10 +685,6 @@
     });
   }
 
-  function escapeHtml(str){
-    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-  }
-
   itemAddBtn.onclick = ()=>{
     const name = (itemName.value || '').trim();
     const sell = safeMoney(itemSell.value);
@@ -603,6 +717,496 @@
 
   itemCancelEditBtn.onclick = resetItemEditor;
 
+  function cleanText(v){
+    return String(v ?? '').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
+  }
+
+  function normalizeName(v){
+    return cleanText(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+  }
+
+  function pctFor(place){
+    const p1name = (w1name.value || 'Hely1').trim();
+    const p2name = (w2name.value || 'Hely2').trim();
+    if(place === p1name) return Math.max(0, Math.min(1, +w1pct.value || 0));
+    if(place === p2name) return Math.max(0, Math.min(1, +w2pct.value || 0));
+    return 0;
+  }
+
+  function ownForEntry(e){
+    const base = +e.amount || 0;
+    const pct = e.pctAtSave != null ? +e.pctAtSave : pctFor(e.workplace);
+    return e.ownAtSave != null ? Math.round(+e.ownAtSave || 0) : Math.round(base * pct);
+  }
+
+  function grossForEntry(e){
+    return +e.grossAmount || +e.amount || 0;
+  }
+
+  function buildPatientGroups(){
+    const map = new Map();
+
+    patientEntries.forEach(e=>{
+      const name = cleanText(e.patient);
+      if(!name) return;
+
+      if(!map.has(name)){
+        map.set(name,{
+          name,
+          norm: normalizeName(name),
+          entries: [],
+          count: 0,
+          totalOwn: 0,
+          totalGross: 0,
+          lastDate: ''
+        });
+      }
+
+      const g = map.get(name);
+      g.entries.push(e);
+      g.count += 1;
+      g.totalOwn += ownForEntry(e);
+      g.totalGross += grossForEntry(e);
+
+      const d = e.date || '';
+      if(d && (!g.lastDate || d > g.lastDate)) g.lastDate = d;
+    });
+
+    patientGroups = Array.from(map.values()).sort((a,b)=>a.name.localeCompare(b.name,'hu'));
+  }
+
+  async function loadPatients(){
+    if(!uid) return;
+
+    patientMsg.className = 'muted';
+    patientMsg.textContent = 'Páciensek betöltése...';
+    patientPreview.innerHTML = '';
+    patientDetail.innerHTML = '';
+    applyPatientMergeBtn.disabled = true;
+    pendingPatientMerge = null;
+
+    try{
+      const qRef = query(collection(db,'users',uid,'entries'), orderBy('date','desc'));
+      const snap = await getDocs(qRef);
+      const arr = [];
+      snap.forEach(d=>arr.push({id:d.id, ...d.data()}));
+
+      patientEntries = arr;
+      buildPatientGroups();
+      patientsLoaded = true;
+
+      selectedPatients = new Set(Array.from(selectedPatients).filter(name => patientGroups.some(g=>g.name===name)));
+
+      renderPatientArea();
+      patientMsg.className = 'ok';
+      patientMsg.textContent = 'Pácienslista betöltve.';
+      setTimeout(()=>{
+        if(patientMsg.textContent === 'Pácienslista betöltve.'){
+          patientMsg.textContent = '';
+          patientMsg.className = 'muted';
+        }
+      },1500);
+    }catch(err){
+      patientMsg.className = 'err';
+      patientMsg.textContent = err?.message || 'Nem sikerült betölteni a pácienseket.';
+    }
+  }
+
+  function levenshtein(a,b){
+    if(a === b) return 0;
+    if(!a) return b.length;
+    if(!b) return a.length;
+
+    const prev = Array.from({length:b.length+1}, (_,i)=>i);
+    const cur = new Array(b.length+1);
+
+    for(let i=1;i<=a.length;i++){
+      cur[0] = i;
+      for(let j=1;j<=b.length;j++){
+        const cost = a[i-1] === b[j-1] ? 0 : 1;
+        cur[j] = Math.min(cur[j-1]+1, prev[j]+1, prev[j-1]+cost);
+      }
+      for(let j=0;j<=b.length;j++) prev[j] = cur[j];
+    }
+
+    return prev[b.length];
+  }
+
+  function nameSimilarity(a,b){
+    if(!a || !b) return 0;
+    if(a === b) return 1;
+
+    const maxLen = Math.max(a.length,b.length) || 1;
+    const levScore = 1 - (levenshtein(a,b) / maxLen);
+
+    const ta = new Set(a.split(' ').filter(Boolean));
+    const tb = new Set(b.split(' ').filter(Boolean));
+    const union = new Set([...ta,...tb]);
+
+    let inter = 0;
+    ta.forEach(x=>{ if(tb.has(x)) inter++; });
+
+    const tokenScore = union.size ? inter / union.size : 0;
+    const containsScore = (a.includes(b) || b.includes(a)) ? 0.86 : 0;
+
+    return Math.max(levScore, tokenScore, containsScore);
+  }
+
+  function likelyDuplicateGroups(groups){
+    const hints = [];
+
+    for(let i=0;i<groups.length;i++){
+      for(let j=i+1;j<groups.length;j++){
+        const a = groups[i];
+        const b = groups[j];
+
+        if(!a.norm || !b.norm) continue;
+
+        const score = nameSimilarity(a.norm,b.norm);
+
+        if(score >= 0.86 && a.name !== b.name){
+          hints.push({names:[a.name,b.name], score});
+        }
+      }
+    }
+
+    const seen = new Set();
+
+    return hints.filter(h=>{
+      const key = h.names.slice().sort().join('|');
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).sort((a,b)=>b.score-a.score).slice(0,8);
+  }
+
+  function getFilteredPatientGroups(){
+    const q = normalizeName(patientSearch.value);
+    if(!q) return patientGroups;
+    return patientGroups.filter(g=>g.norm.includes(q) || normalizeName(g.name).includes(q));
+  }
+
+  function updatePatientSummary(){
+    const selected = patientGroups.filter(g=>selectedPatients.has(g.name));
+    patientCount.textContent = fmt(patientGroups.length);
+    patientEntryCount.textContent = fmt(patientEntries.filter(e=>cleanText(e.patient)).length);
+    patientSelectedCount.textContent = fmt(selected.length);
+    patientSelectedEntryCount.textContent = fmt(selected.reduce((sum,g)=>sum+g.count,0));
+  }
+
+  function renderDuplicateHints(){
+    const hints = likelyDuplicateGroups(patientGroups);
+
+    if(!hints.length){
+      patientDuplicateHints.innerHTML = '';
+      return;
+    }
+
+    patientDuplicateHints.innerHTML = `
+      <div class="warnbox" style="margin-top:12px">
+        <strong>Gyanús duplikációk</strong>
+        <div style="font-size:12px;margin-top:4px">Ezek csak névhasonlóság alapján készült javaslatok.</div>
+        <div class="similar-list">
+          ${hints.map((h,idx)=>`
+            <div class="similar-card">
+              <strong>${escapeHtml(h.names[0])}</strong> ↔ <strong>${escapeHtml(h.names[1])}</strong>
+              <div style="font-size:12px">Hasonlóság: ${Math.round(h.score*100)}%</div>
+              <button class="btn" data-hint-index="${idx}">Ezek kijelölése</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    patientDuplicateHints.querySelectorAll('[data-hint-index]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const h = hints[Number(btn.dataset.hintIndex)];
+        h.names.forEach(n=>selectedPatients.add(n));
+        patientTargetName.value = h.names.slice().sort((a,b)=>b.length-a.length)[0] || '';
+        pendingPatientMerge = null;
+        applyPatientMergeBtn.disabled = true;
+        patientPreview.innerHTML = '';
+        renderPatientArea(false);
+      };
+    });
+  }
+
+  function renderPatientList(){
+    const list = getFilteredPatientGroups();
+
+    if(!patientsLoaded){
+      patientList.innerHTML = `<div class="empty">Nyisd le ezt a részt vagy kattints a lista frissítésére.</div>`;
+      return;
+    }
+
+    if(!list.length){
+      patientList.innerHTML = `<div class="empty">Nincs találat.</div>`;
+      return;
+    }
+
+    patientList.innerHTML = '';
+
+    list.forEach(g=>{
+      const row = document.createElement('div');
+      row.className = 'patient-row' + (selectedPatients.has(g.name) ? ' selected' : '');
+
+      const checkWrap = document.createElement('div');
+      const check = document.createElement('input');
+      check.type = 'checkbox';
+      check.className = 'small-check';
+      check.checked = selectedPatients.has(g.name);
+      check.onchange = ()=>{
+        if(check.checked) selectedPatients.add(g.name);
+        else selectedPatients.delete(g.name);
+        pendingPatientMerge = null;
+        applyPatientMergeBtn.disabled = true;
+        patientPreview.innerHTML = '';
+        renderPatientArea(false);
+      };
+      checkWrap.appendChild(check);
+
+      const nameBox = document.createElement('div');
+      nameBox.innerHTML = `<div class="patient-name">${escapeHtml(g.name)}</div><div class="patient-meta">Normalizált: ${escapeHtml(g.norm || '-')}</div>`;
+
+      const countBox = document.createElement('div');
+      countBox.className = 'patient-num';
+      countBox.innerHTML = `<span class="muted">Bejegyzés</span><strong>${fmt(g.count)}</strong>`;
+
+      const ownBox = document.createElement('div');
+      ownBox.className = 'patient-num';
+      ownBox.innerHTML = `<span class="muted">Saját</span><strong>${fmt(g.totalOwn)}</strong>`;
+
+      const dateBox = document.createElement('div');
+      dateBox.className = 'patient-num';
+      dateBox.innerHTML = `<span class="muted">Utolsó</span><strong>${escapeHtml(g.lastDate || '-')}</strong>`;
+
+      const detailBtn = document.createElement('button');
+      detailBtn.className = 'btn';
+      detailBtn.type = 'button';
+      detailBtn.textContent = 'Részletek';
+      detailBtn.onclick = ()=>renderPatientDetail(g.name);
+
+      row.appendChild(checkWrap);
+      row.appendChild(nameBox);
+      row.appendChild(countBox);
+      row.appendChild(ownBox);
+      row.appendChild(dateBox);
+      row.appendChild(detailBtn);
+
+      patientList.appendChild(row);
+    });
+  }
+
+  function renderPatientArea(renderHints=true){
+    updatePatientSummary();
+    if(renderHints) renderDuplicateHints();
+    renderPatientList();
+  }
+
+  function renderPatientDetail(name){
+    const g = patientGroups.find(x=>x.name===name);
+
+    if(!g){
+      patientDetail.innerHTML = '';
+      return;
+    }
+
+    const rows = g.entries.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(e=>`
+      <tr>
+        <td>${escapeHtml(e.date || '')}</td>
+        <td>${escapeHtml(e.procedure || '')}</td>
+        <td>${escapeHtml(e.workplace || '')}</td>
+        <td class="right">${fmt(grossForEntry(e))}</td>
+        <td class="right">${fmt(+e.amount || 0)}</td>
+        <td class="right">${fmt(ownForEntry(e))}</td>
+      </tr>
+    `).join('');
+
+    patientDetail.innerHTML = `
+      <div class="patient-detail">
+        <div class="patient-detail-head">
+          <div>
+            <strong>${escapeHtml(g.name)}</strong>
+            <div class="muted">${fmt(g.count)} bejegyzés, saját összesen: ${fmt(g.totalOwn)} Ft</div>
+          </div>
+          <button class="btn" id="closePatientDetailBtn">Bezárás</button>
+        </div>
+        <div class="ktable">
+          <table>
+            <thead>
+              <tr>
+                <th>Dátum</th>
+                <th>Beavatkozás</th>
+                <th>Munkahely</th>
+                <th class="right">Páciens fizette</th>
+                <th class="right">Jutalékalap</th>
+                <th class="right">Saját</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('closePatientDetailBtn').onclick = ()=>patientDetail.innerHTML = '';
+  }
+
+  function getSelectedEntriesForPatientMerge(){
+    const names = Array.from(selectedPatients);
+    return patientEntries.filter(e=>names.includes(cleanText(e.patient)));
+  }
+
+  previewPatientMergeBtn.onclick = ()=>{
+    patientMsg.className = 'muted';
+    patientMsg.textContent = '';
+    applyPatientMergeBtn.disabled = true;
+    pendingPatientMerge = null;
+
+    const target = cleanText(patientTargetName.value);
+    const names = Array.from(selectedPatients);
+
+    if(!names.length){
+      patientMsg.className = 'err';
+      patientMsg.textContent = 'Jelölj ki legalább egy páciensnevet.';
+      return;
+    }
+
+    if(!target){
+      patientMsg.className = 'err';
+      patientMsg.textContent = 'Írd be a végleges / javított nevet.';
+      return;
+    }
+
+    const affected = getSelectedEntriesForPatientMerge();
+
+    if(!affected.length){
+      patientMsg.className = 'err';
+      patientMsg.textContent = 'A kijelölt nevekhez nem találtam bejegyzést.';
+      return;
+    }
+
+    const changed = affected.filter(e=>cleanText(e.patient) !== target);
+
+    if(!changed.length){
+      patientMsg.className = 'err';
+      patientMsg.textContent = 'Nincs mit módosítani, mert minden kijelölt bejegyzés már ezen a néven van.';
+      return;
+    }
+
+    pendingPatientMerge = { target, names, entries: changed.map(e=>e.id) };
+    applyPatientMergeBtn.disabled = false;
+
+    const rows = changed.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(e=>`
+      <tr>
+        <td>${escapeHtml(e.date || '')}</td>
+        <td>${escapeHtml(cleanText(e.patient))}</td>
+        <td>${escapeHtml(target)}</td>
+        <td>${escapeHtml(e.procedure || '')}</td>
+        <td class="right">${fmt(ownForEntry(e))}</td>
+      </tr>
+    `).join('');
+
+    patientPreview.innerHTML = `
+      <div class="preview-box">
+        <div class="preview-head">
+          <div>
+            <strong>Előnézet</strong>
+            <div class="muted">${fmt(changed.length)} bejegyzés páciensneve fog módosulni.</div>
+          </div>
+          <button class="btn" id="clearPatientPreviewBtn">Előnézet törlése</button>
+        </div>
+        <div class="warnbox" style="margin:12px">Csak a páciensnév változik. Az összegek, dátumok, beavatkozások és munkahelyek nem módosulnak.</div>
+        <div class="ktable">
+          <table>
+            <thead>
+              <tr>
+                <th>Dátum</th>
+                <th>Régi név</th>
+                <th>Új név</th>
+                <th>Beavatkozás</th>
+                <th class="right">Saját</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('clearPatientPreviewBtn').onclick = ()=>{
+      patientPreview.innerHTML = '';
+      pendingPatientMerge = null;
+      applyPatientMergeBtn.disabled = true;
+    };
+  };
+
+  async function commitPatientMerge(){
+    if(!pendingPatientMerge || !pendingPatientMerge.entries.length) return;
+
+    const target = pendingPatientMerge.target;
+    const ids = pendingPatientMerge.entries.slice();
+
+    applyPatientMergeBtn.disabled = true;
+    previewPatientMergeBtn.disabled = true;
+    patientMsg.className = 'muted';
+    patientMsg.textContent = 'Módosítás folyamatban...';
+
+    try{
+      for(let i=0;i<ids.length;i+=450){
+        const batch = writeBatch(db);
+        ids.slice(i,i+450).forEach(id=>{
+          batch.update(doc(db,'users',uid,'entries',id), {
+            patient: target,
+            patientUpdatedAt: Date.now()
+          });
+        });
+        await batch.commit();
+      }
+
+      patientMsg.className = 'ok';
+      patientMsg.textContent = `${fmt(ids.length)} bejegyzés páciensneve módosítva lett erre: ${target}`;
+      selectedPatients = new Set();
+      patientTargetName.value = '';
+      patientPreview.innerHTML = '';
+      patientDetail.innerHTML = '';
+      pendingPatientMerge = null;
+      await loadPatients();
+    }catch(err){
+      applyPatientMergeBtn.disabled = false;
+      patientMsg.className = 'err';
+      patientMsg.textContent = err?.message || 'Nem sikerült véglegesíteni a módosítást.';
+    }finally{
+      previewPatientMergeBtn.disabled = false;
+    }
+  }
+
+  applyPatientMergeBtn.onclick = ()=>{
+    if(!pendingPatientMerge) return;
+
+    const ok = confirm(`Biztosan módosítod ${pendingPatientMerge.entries.length} bejegyzés páciensnevét erre?\n\n${pendingPatientMerge.target}`);
+
+    if(ok) commitPatientMerge();
+  };
+
+  patientsPanel.addEventListener('toggle', ()=>{
+    if(patientsPanel.open && !patientsLoaded) loadPatients();
+  });
+
+  reloadPatientsBtn.onclick = loadPatients;
+
+  clearPatientSelectionBtn.onclick = ()=>{
+    selectedPatients = new Set();
+    pendingPatientMerge = null;
+    applyPatientMergeBtn.disabled = true;
+    patientPreview.innerHTML = '';
+    renderPatientArea(false);
+  };
+
+  patientSearch.addEventListener('input', ()=>{
+    renderPatientList();
+  });
+
   onAuthStateChanged(auth, async user=>{
     if(!user){
       authCard.classList.remove('hide');
@@ -611,12 +1215,14 @@
       uid = null;
       return;
     }
+
     uid = user.uid;
     authCard.classList.add('hide');
     content.classList.remove('hide');
 
     const sRef = doc(db,'users',uid,'meta','settings');
     const snap = await getDoc(sRef);
+
     if(!snap.exists()){
       await setDoc(sRef,{
         w1name:'Hely1', w1pct:0.30, w1color:'#2563eb',
@@ -628,6 +1234,7 @@
     }
 
     const s = (await getDoc(sRef)).data() || {};
+
     w1name.value = s.w1name ?? 'Hely1';
     w1pct.value = s.w1pct ?? 0.30;
     w1color.value = s.w1color ?? '#2563eb';
@@ -686,6 +1293,7 @@
   saveBtn.onclick = async ()=>{
     msgOk.classList.add('hide');
     msgErr.classList.add('hide');
+
     try{
       const data = {
         w1name: (w1name.value||'Hely1').trim(),
@@ -704,6 +1312,7 @@
           w2: sanitizeItems(itemsByPlace.w2)
         }
       };
+
       await setDoc(doc(db,'users',uid,'meta','settings'), data, {merge:true});
       msgOk.classList.remove('hide');
       setTimeout(()=>msgOk.classList.add('hide'),1500);
