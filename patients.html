@@ -3,13 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-
 <link rel="apple-touch-icon" href="dent.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Bevételkövető">
 <meta name="theme-color" content="#2563eb">
-
 <title>Páciensek – Fogorvosi bevételkövető</title>
 <style>
   :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e6eaf1;--primary:#2563eb;--danger:#ef4444;--ok:#16a34a;--warn:#f59e0b;--shadow:0 6px 25px rgba(15,23,42,.08)}
@@ -40,11 +38,12 @@
   .muted{color:var(--muted);font-size:12px}
   .ok{padding:10px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;margin-bottom:10px}
   .err{padding:10px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d;margin-bottom:10px}
-  .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
   .summary-box{border:1px solid var(--line);border-radius:12px;background:#f8fafc;padding:12px}
   .summary-box strong{display:block;font-size:22px;margin-top:4px}
   .patient-list{display:flex;flex-direction:column;gap:10px}
   .patient-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .patient-card.virtual{border-style:dashed;background:#fcfdff}
   .patient-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
   .patient-title{min-width:0}
   .patient-name{font-size:17px;font-weight:900;word-break:break-word}
@@ -54,6 +53,8 @@
   .pill{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:800;background:#f8fafc;color:#475569}
   .pill.todo{background:#fffbeb;border-color:#fde68a;color:#92400e}
   .pill.plan{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}
+  .pill.entry{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+  .pill.virtual{background:#f8fafc;border-style:dashed;color:#64748b}
   .text-block{border:1px solid var(--line);border-radius:10px;background:#f8fafc;padding:10px;white-space:pre-wrap;word-break:break-word}
   .empty{padding:18px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);text-align:center;background:#fff}
   .loader{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:9999;transition:opacity .25s ease;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
@@ -66,6 +67,7 @@
   .form-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
   .field-note{margin-top:6px}
   .nav .btn{min-width:0}
+  @media (max-width:900px){.summary-grid{grid-template-columns:1fr 1fr}}
   @media (max-width:760px){
     .layout{padding:16px}
     .row,.row3,.summary-grid{grid-template-columns:1fr}
@@ -111,14 +113,8 @@
   <div class="card" id="authCard">
     <h2>Bejelentkezés</h2>
     <div class="row">
-      <div>
-        <label>E-mail</label>
-        <input type="email" id="email" inputmode="email" autocomplete="username">
-      </div>
-      <div>
-        <label>Jelszó</label>
-        <input type="password" id="password" autocomplete="current-password">
-      </div>
+      <div><label>E-mail</label><input type="email" id="email" inputmode="email" autocomplete="username"></div>
+      <div><label>Jelszó</label><input type="password" id="password" autocomplete="current-password"></div>
     </div>
     <div class="toolbar">
       <button class="btn primary" id="loginBtn">Belépés</button>
@@ -130,18 +126,10 @@
   <div class="card hide" id="summaryCard">
     <h2>Áttekintés</h2>
     <div class="summary-grid">
-      <div class="summary-box">
-        <div class="muted">Összes páciens</div>
-        <strong id="totalPatients">0</strong>
-      </div>
-      <div class="summary-box">
-        <div class="muted">Teendővel</div>
-        <strong id="todoPatients">0</strong>
-      </div>
-      <div class="summary-box">
-        <div class="muted">Kezelési tervvel</div>
-        <strong id="planPatients">0</strong>
-      </div>
+      <div class="summary-box"><div class="muted">Összes páciensnév</div><strong id="totalPatients">0</strong></div>
+      <div class="summary-box"><div class="muted">Törzsben</div><strong id="masterPatients">0</strong></div>
+      <div class="summary-box"><div class="muted">Teendővel</div><strong id="todoPatients">0</strong></div>
+      <div class="summary-box"><div class="muted">Kezelési tervvel</div><strong id="planPatients">0</strong></div>
     </div>
   </div>
 
@@ -160,7 +148,7 @@
     <div style="margin-top:12px">
       <label>Páciens neve</label>
       <input id="patientName" type="text" placeholder="Pl. Kiss Anna" autocomplete="name">
-      <div class="muted field-note">Ez a név kerül majd be a páciens törzsbe, és ezt tudjuk később az autocomplete listákhoz is használni.</div>
+      <div class="muted field-note">Ha csak a nevet töltöd ki, akkor is bekerül a páciens törzsbe.</div>
     </div>
 
     <div style="margin-top:10px">
@@ -172,7 +160,7 @@
       <label>Kezelési terv</label>
       <textarea id="patientPlan" placeholder="Pl. 36 gyökérkezelés, kontroll rtg, majd felépítés. Felső fogkő és státusz..."></textarea>
       <div class="toolbar">
-        <button class="btn" id="copyCurrentPlanBtn" type="button">📋 Kezelési terv másolása</button>
+        <button class="btn" id="copyCurrentPlanBtn" type="button">📋 Másolás</button>
       </div>
     </div>
 
@@ -186,14 +174,13 @@
     <div class="topbar">
       <div>
         <h2>Pácienslista</h2>
-        <div class="muted">Itt tudod visszakeresni, szerkeszteni, törölni és másolni a kezelési terveket.</div>
+        <div class="muted">A lista a külön páciens törzsből és a rögzített bevételi bejegyzések páciensneveiből együtt épül.</div>
       </div>
       <div style="min-width:260px">
         <label>Keresés</label>
         <input id="patientSearch" type="search" placeholder="Név, teendő vagy kezelési terv">
       </div>
     </div>
-
     <div id="patientList" class="patient-list" style="margin-top:12px"></div>
   </div>
 </div>
@@ -201,7 +188,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-  import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp, getDocs, where, limit } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+  import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBGVBozEiKhqOqvvYB9Qsm1xCLrsw0itNI",
@@ -246,33 +233,36 @@
   const patientList = document.getElementById('patientList');
 
   const totalPatients = document.getElementById('totalPatients');
+  const masterPatients = document.getElementById('masterPatients');
   const todoPatients = document.getElementById('todoPatients');
   const planPatients = document.getElementById('planPatients');
 
   let currentUID = null;
-  let patients = [];
-  let editingId = null;
-  let unsubscribePatients = null;
+  let patientDocs = new Map();
+  let entryPatients = new Map();
+  let combinedPatients = [];
+  let editingKey = null;
+  let unsubscribePatientDocs = null;
+  let unsubscribeEntries = null;
 
   const hideLoader = ()=> loader.classList.add('hide');
   const showLoader = ()=> loader.classList.remove('hide');
 
   function normalizeName(text){
-    return String(text || '')
-      .trim()
-      .replace(/\s+/g, ' ')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+    return String(text || '').trim().replace(/\s+/g, ' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function patientKey(text){
+    const key = normalizeName(text).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    return key || `patient_${Date.now()}`;
+  }
+
+  function cleanName(text){
+    return String(text || '').trim().replace(/\s+/g, ' ');
   }
 
   function esc(text){
-    return String(text || '')
-      .replace(/&/g,'&amp;')
-      .replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;')
-      .replace(/'/g,'&#039;');
+    return String(text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
   }
 
   function dateText(value){
@@ -286,12 +276,8 @@
     }
   }
 
-  function patientCol(){
-    return collection(db, 'users', currentUID, 'patients');
-  }
-
-  function patientDoc(id){
-    return doc(db, 'users', currentUID, 'patients', id);
+  function patientDocRef(key){
+    return doc(db, 'users', currentUID, 'patients', key);
   }
 
   function clearMessages(){
@@ -313,7 +299,7 @@
   }
 
   function resetForm(){
-    editingId = null;
+    editingKey = null;
     formTitle.textContent = 'Új páciens';
     savePatientBtn.textContent = 'Páciens mentése';
     patientName.value = '';
@@ -338,25 +324,118 @@
     }
   }
 
-  async function hasDuplicateName(name, skipId){
-    const n = normalizeName(name);
-    if(!n) return false;
-    const qRef = query(patientCol(), where('normalizedName','==', n), limit(10));
-    const snap = await getDocs(qRef);
-    let duplicate = false;
-    snap.forEach(d=>{
-      if(d.id !== skipId) duplicate = true;
+  function buildCombinedPatients(){
+    const map = new Map();
+    entryPatients.forEach((entry, key)=>{
+      map.set(key, {
+        key,
+        name: entry.name,
+        todo: '',
+        treatmentPlan: '',
+        entryCount: entry.count || 0,
+        lastEntryAt: entry.lastEntryAt || null,
+        createdAt: null,
+        updatedAt: null,
+        hasMaster: false,
+        isVirtual: true
+      });
     });
-    return duplicate;
+    patientDocs.forEach((docData, key)=>{
+      const prev = map.get(key) || {};
+      map.set(key, {
+        key,
+        name: docData.name || prev.name || '',
+        todo: docData.todo || '',
+        treatmentPlan: docData.treatmentPlan || '',
+        entryCount: prev.entryCount || docData.entryCount || 0,
+        lastEntryAt: prev.lastEntryAt || docData.lastEntryAt || null,
+        createdAt: docData.createdAt || null,
+        updatedAt: docData.updatedAt || null,
+        hasMaster: true,
+        isVirtual: false
+      });
+    });
+    combinedPatients = Array.from(map.values()).filter(p=>p.name).sort((a,b)=>a.name.localeCompare(b.name,'hu-HU'));
+  }
+
+  function renderSummary(){
+    totalPatients.textContent = combinedPatients.length;
+    masterPatients.textContent = combinedPatients.filter(p=>p.hasMaster).length;
+    todoPatients.textContent = combinedPatients.filter(p=>(p.todo || '').trim()).length;
+    planPatients.textContent = combinedPatients.filter(p=>(p.treatmentPlan || '').trim()).length;
+  }
+
+  function renderPatients(){
+    buildCombinedPatients();
+    renderSummary();
+
+    const term = normalizeName(patientSearch.value);
+    const visible = combinedPatients.filter(p=>{
+      if(!term) return true;
+      const hay = normalizeName(`${p.name || ''} ${p.todo || ''} ${p.treatmentPlan || ''}`);
+      return hay.includes(term);
+    });
+
+    patientList.innerHTML = '';
+
+    if(!visible.length){
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = combinedPatients.length ? 'Nincs találat a keresésre.' : 'Még nincs páciensnév.';
+      patientList.appendChild(empty);
+      return;
+    }
+
+    visible.forEach(p=>{
+      const todo = (p.todo || '').trim();
+      const plan = (p.treatmentPlan || '').trim();
+      const updated = dateText(p.updatedAt);
+      const created = dateText(p.createdAt);
+      const lastEntry = dateText(p.lastEntryAt);
+      const card = document.createElement('div');
+      card.className = `patient-card${p.isVirtual ? ' virtual' : ''}`;
+      const deleteButton = p.hasMaster ? '<button class="btn danger delete-btn" type="button">Törlés</button>' : '';
+      const entryText = p.entryCount ? `${p.entryCount.toLocaleString('hu-HU')} naplóbejegyzés` : 'Nincs naplóbejegyzés';
+      const metaParts = [];
+      if(updated) metaParts.push(`Frissítve: ${updated}`);
+      else if(created) metaParts.push(`Létrehozva: ${created}`);
+      if(lastEntry) metaParts.push(`Utolsó napló: ${lastEntry}`);
+
+      card.innerHTML = `
+        <div class="patient-head">
+          <div class="patient-title">
+            <div class="patient-name">${esc(p.name || 'Névtelen páciens')}</div>
+            <div class="patient-meta">${esc(metaParts.join(' · '))}</div>
+          </div>
+          <div class="patient-actions">
+            <button class="btn copy-btn" type="button" ${plan ? '' : 'disabled'}>📋 Másolás</button>
+            <button class="btn edit-btn" type="button">Szerkesztés</button>
+            ${deleteButton}
+          </div>
+        </div>
+        <div class="pill-row">
+          ${p.hasMaster ? '<span class="pill entry">Törzsben</span>' : '<span class="pill virtual">Naplóból</span>'}
+          <span class="pill">${esc(entryText)}</span>
+          ${todo ? '<span class="pill todo">Teendő van</span>' : '<span class="pill">Nincs teendő</span>'}
+          ${plan ? '<span class="pill plan">Kezelési terv van</span>' : '<span class="pill">Nincs kezelési terv</span>'}
+        </div>
+        ${todo ? `<div><h3>Teendő</h3><div class="text-block">${esc(todo)}</div></div>` : ''}
+        ${plan ? `<div><h3>Kezelési terv</h3><div class="text-block">${esc(plan)}</div></div>` : ''}
+      `;
+
+      card.querySelector('.edit-btn').addEventListener('click', ()=>editPatient(p.key));
+      const delBtn = card.querySelector('.delete-btn');
+      if(delBtn) delBtn.addEventListener('click', ()=>deletePatient(p.key));
+      card.querySelector('.copy-btn').addEventListener('click', ()=>copyToClipboard(plan));
+      patientList.appendChild(card);
+    });
   }
 
   async function savePatient(){
     clearMessages();
-
-    const name = patientName.value.trim().replace(/\s+/g, ' ');
+    const name = cleanName(patientName.value);
     const todo = patientTodo.value.trim();
     const treatmentPlan = patientPlan.value.trim();
-    const normalizedName = normalizeName(name);
 
     if(!currentUID){
       showErr('Nem vagy bejelentkezve.');
@@ -369,34 +448,30 @@
       return;
     }
 
+    const key = patientKey(name);
+    if(editingKey && editingKey !== key && patientDocs.has(key)){
+      showErr('Ez a páciensnév már szerepel a törzsben.');
+      return;
+    }
+
+    savePatientBtn.disabled = true;
     try{
-      savePatientBtn.disabled = true;
-
-      const duplicate = await hasDuplicateName(name, editingId);
-      if(duplicate){
-        showErr('Ez a páciensnév már szerepel a listában. Ha ugyanarról a páciensről van szó, inkább szerkeszd a meglévőt.');
-        return;
-      }
-
-      const data = {
+      const now = Date.now();
+      const existing = patientDocs.get(editingKey || key) || patientDocs.get(key) || {};
+      await setDoc(patientDocRef(key), {
         name,
         todo,
         treatmentPlan,
-        normalizedName,
-        updatedAt: serverTimestamp()
-      };
+        normalizedName: normalizeName(name),
+        createdAt: existing.createdAt || now,
+        updatedAt: now
+      }, { merge:true });
 
-      if(editingId){
-        await updateDoc(patientDoc(editingId), data);
-        showOk('Páciens módosítva ✓');
-      }else{
-        await addDoc(patientCol(), {
-          ...data,
-          createdAt: serverTimestamp()
-        });
-        showOk('Páciens mentve ✓');
+      if(editingKey && editingKey !== key && patientDocs.has(editingKey)){
+        await deleteDoc(patientDocRef(editingKey));
       }
 
+      showOk('Páciens mentve ✓');
       resetForm();
     }catch(e){
       showErr(e?.message || 'Mentési hiba történt.');
@@ -405,32 +480,29 @@
     }
   }
 
-  function editPatient(id){
-    const p = patients.find(item => item.id === id);
+  function editPatient(key){
+    const p = combinedPatients.find(item=>item.key === key);
     if(!p) return;
-
-    editingId = id;
-    formTitle.textContent = 'Páciens szerkesztése';
-    savePatientBtn.textContent = 'Módosítás mentése';
+    editingKey = key;
+    formTitle.textContent = p.hasMaster ? 'Páciens szerkesztése' : 'Páciens törzsbe mentése';
+    savePatientBtn.textContent = p.hasMaster ? 'Módosítás mentése' : 'Törzsbe mentés';
     patientName.value = p.name || '';
     patientTodo.value = p.todo || '';
     patientPlan.value = p.treatmentPlan || '';
     clearMessages();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top:0, behavior:'smooth' });
     patientName.focus();
   }
 
-  async function deletePatient(id){
-    const p = patients.find(item => item.id === id);
-    if(!p) return;
-
-    const ok = confirm(`Biztosan törlöd ezt a páciens-adatlapot?\n\n${p.name}\n\nA bevételi napló bejegyzései nem törlődnek.`);
+  async function deletePatient(key){
+    const p = combinedPatients.find(item=>item.key === key);
+    if(!p || !p.hasMaster) return;
+    const ok = confirm(`Biztosan törlöd ezt a páciens törzsadatot?\n\n${p.name}\n\nA bevételi napló bejegyzései nem törlődnek.`);
     if(!ok) return;
-
     try{
       showLoader();
-      await deleteDoc(patientDoc(id));
-      if(editingId === id) resetForm();
+      await deleteDoc(patientDocRef(key));
+      if(editingKey === key) resetForm();
     }catch(e){
       showErr(e?.message || 'Törlési hiba történt.');
     }finally{
@@ -438,21 +510,12 @@
     }
   }
 
-  function buildAssistantCopyText(p){
-    const name = (p?.name || '').trim();
-    const plan = (p?.treatmentPlan || '').trim();
-    if(!plan) return '';
-    return name ? `Páciens: ${name}\n\nKezelési terv:\n${plan}` : plan;
-  }
-
   async function copyToClipboard(text){
     const value = String(text || '').trim();
-
     if(!value){
       showErr('Nincs mit másolni.');
       return;
     }
-
     try{
       if(navigator.clipboard && window.isSecureContext){
         await navigator.clipboard.writeText(value);
@@ -467,88 +530,52 @@
         document.execCommand('copy');
         document.body.removeChild(t);
       }
-      showOk('Kezelési terv vágólapra másolva ✓');
+      showOk('Vágólapra másolva ✓');
     }catch(e){
       showErr('Nem sikerült másolni. Jelöld ki kézzel a szöveget.');
     }
   }
 
-  function renderSummary(){
-    totalPatients.textContent = patients.length;
-    todoPatients.textContent = patients.filter(p => (p.todo || '').trim()).length;
-    planPatients.textContent = patients.filter(p => (p.treatmentPlan || '').trim()).length;
-  }
+  function startListeners(){
+    if(unsubscribePatientDocs) unsubscribePatientDocs();
+    if(unsubscribeEntries) unsubscribeEntries();
 
-  function renderPatients(){
-    renderSummary();
-
-    const term = normalizeName(patientSearch.value);
-    const visible = patients.filter(p=>{
-      if(!term) return true;
-      const hay = normalizeName(`${p.name || ''} ${p.todo || ''} ${p.treatmentPlan || ''}`);
-      return hay.includes(term);
-    });
-
-    patientList.innerHTML = '';
-
-    if(!visible.length){
-      const empty = document.createElement('div');
-      empty.className = 'empty';
-      empty.textContent = patients.length ? 'Nincs találat a keresésre.' : 'Még nincs felvitt páciens.';
-      patientList.appendChild(empty);
-      return;
-    }
-
-    visible.forEach(p=>{
-      const todo = (p.todo || '').trim();
-      const plan = (p.treatmentPlan || '').trim();
-      const updated = dateText(p.updatedAt);
-      const created = dateText(p.createdAt);
-
-      const card = document.createElement('div');
-      card.className = 'patient-card';
-
-      card.innerHTML = `
-        <div class="patient-head">
-          <div class="patient-title">
-            <div class="patient-name">${esc(p.name || 'Névtelen páciens')}</div>
-            <div class="patient-meta">${updated ? `Frissítve: ${esc(updated)}` : created ? `Létrehozva: ${esc(created)}` : ''}</div>
-          </div>
-          <div class="patient-actions">
-            <button class="btn copy-btn" type="button" ${plan ? '' : 'disabled'}>📋 Másolás asszisztensnek</button>
-            <button class="btn edit-btn" type="button">Szerkesztés</button>
-            <button class="btn danger delete-btn" type="button">Törlés</button>
-          </div>
-        </div>
-        <div class="pill-row">
-          ${todo ? '<span class="pill todo">Teendő van</span>' : '<span class="pill">Nincs teendő</span>'}
-          ${plan ? '<span class="pill plan">Kezelési terv van</span>' : '<span class="pill">Nincs kezelési terv</span>'}
-        </div>
-        ${todo ? `<div><h3>Teendő</h3><div class="text-block">${esc(todo)}</div></div>` : ''}
-        ${plan ? `<div><h3>Kezelési terv</h3><div class="text-block">${esc(plan)}</div></div>` : ''}
-      `;
-
-      card.querySelector('.edit-btn').addEventListener('click', ()=>editPatient(p.id));
-      card.querySelector('.delete-btn').addEventListener('click', ()=>deletePatient(p.id));
-      card.querySelector('.copy-btn').addEventListener('click', ()=>copyToClipboard(buildAssistantCopyText(p)));
-
-      patientList.appendChild(card);
-    });
-  }
-
-  function startPatientListener(){
-    if(unsubscribePatients) unsubscribePatients();
-
-    const qRef = query(patientCol(), orderBy('normalizedName', 'asc'));
-    unsubscribePatients = onSnapshot(qRef, snap=>{
-      patients = [];
+    const patientsRef = query(collection(db, 'users', currentUID, 'patients'), orderBy('normalizedName', 'asc'), limit(3000));
+    unsubscribePatientDocs = onSnapshot(patientsRef, snap=>{
+      patientDocs = new Map();
       snap.forEach(d=>{
-        patients.push({ id:d.id, ...d.data() });
+        const data = d.data();
+        const name = cleanName(data.name);
+        const key = d.id || patientKey(name);
+        if(name) patientDocs.set(key, { ...data, name });
       });
       renderPatients();
       hideLoader();
     }, err=>{
-      showErr(err?.message || 'Nem sikerült betölteni a pácienseket.');
+      showErr(err?.message || 'Nem sikerült betölteni a páciens törzset.');
+      hideLoader();
+    });
+
+    const entriesRef = query(collection(db, 'users', currentUID, 'entries'), orderBy('createdAt', 'desc'), limit(3000));
+    unsubscribeEntries = onSnapshot(entriesRef, snap=>{
+      const map = new Map();
+      snap.forEach(d=>{
+        const e = d.data();
+        const name = cleanName(e.patient);
+        if(!name) return;
+        const key = patientKey(name);
+        const prev = map.get(key) || { name, count:0, lastEntryAt:null };
+        prev.count += 1;
+        const stamp = e.createdAt || e.patientUpdatedAt || 0;
+        if(stamp && (!prev.lastEntryAt || stamp > prev.lastEntryAt)) prev.lastEntryAt = stamp;
+        if(!prev.name || name.length > prev.name.length) prev.name = name;
+        map.set(key, prev);
+      });
+      entryPatients = map;
+      renderPatients();
+      hideLoader();
+    }, err=>{
+      showErr(err?.message || 'Nem sikerült betölteni a napló páciensneveit.');
       hideLoader();
     });
   }
@@ -584,10 +611,7 @@
   patientSearch.addEventListener('input', renderPatients);
 
   copyCurrentPlanBtn.addEventListener('click', ()=>{
-    const name = patientName.value.trim();
-    const plan = patientPlan.value.trim();
-    const text = name && plan ? `Páciens: ${name}\n\nKezelési terv:\n${plan}` : plan;
-    copyToClipboard(text);
+    copyToClipboard(patientPlan.value.trim());
   });
 
   patientName.addEventListener('keydown', e=>{
@@ -599,23 +623,25 @@
 
   onAuthStateChanged(auth, user=>{
     root.classList.remove('hide');
-
     if(!user){
       currentUID = null;
-      patients = [];
-      editingId = null;
-      if(unsubscribePatients) unsubscribePatients();
-      unsubscribePatients = null;
+      patientDocs = new Map();
+      entryPatients = new Map();
+      combinedPatients = [];
+      editingKey = null;
+      if(unsubscribePatientDocs) unsubscribePatientDocs();
+      if(unsubscribeEntries) unsubscribeEntries();
+      unsubscribePatientDocs = null;
+      unsubscribeEntries = null;
       setAuthView(false);
       renderPatients();
       hideLoader();
       return;
     }
-
     currentUID = user.uid;
     setAuthView(true);
     resetForm();
-    startPatientListener();
+    startListeners();
   });
 </script>
 </body>
