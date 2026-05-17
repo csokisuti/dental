@@ -38,10 +38,16 @@
   .muted{color:var(--muted);font-size:12px}
   .ok{padding:10px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;margin-bottom:10px}
   .err{padding:10px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#7f1d1d;margin-bottom:10px}
-  .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
   .summary-box{border:1px solid var(--line);border-radius:12px;background:#f8fafc;padding:12px}
   .summary-box strong{display:block;font-size:22px;margin-top:4px}
   .patient-list{display:flex;flex-direction:column;gap:10px}
+  .pending-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .pending-card{border:1px solid #fde68a;border-radius:12px;background:#fffbeb;padding:12px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+  .pending-main{min-width:0;flex:1}
+  .pending-name{font-size:16px;font-weight:900;word-break:break-word}
+  .pending-todo{margin-top:6px;white-space:pre-wrap;word-break:break-word;color:#92400e}
+  .pending-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   .patient-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px;display:flex;flex-direction:column;gap:10px}
   .patient-card.virtual{border-style:dashed;background:#fcfdff}
   .patient-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
@@ -80,6 +86,8 @@
     .patient-head{flex-direction:column}
     .patient-actions{display:grid;grid-template-columns:1fr;width:100%}
     .patient-actions .btn{width:100%}
+    .pending-actions{display:grid;grid-template-columns:1fr;width:100%}
+    .pending-actions .btn{width:100%}
   }
 </style>
 </head>
@@ -130,6 +138,7 @@
       <div class="summary-box"><div class="muted">Törzsben</div><strong id="masterPatients">0</strong></div>
       <div class="summary-box"><div class="muted">Teendővel</div><strong id="todoPatients">0</strong></div>
       <div class="summary-box"><div class="muted">Kezelési tervvel</div><strong id="planPatients">0</strong></div>
+      <div class="summary-box"><div class="muted">Tervre vár</div><strong id="pendingPlanPatients">0</strong></div>
     </div>
   </div>
 
@@ -168,6 +177,16 @@
       <button class="btn" id="cancelEditBtn" type="button">Mégse</button>
       <button class="btn primary" id="savePatientBtn" type="button">Páciens mentése</button>
     </div>
+  </div>
+
+  <div class="card hide" id="pendingPlanCard">
+    <div class="topbar">
+      <div>
+        <h2>Kezelési tervre vár</h2>
+        <div class="muted">Ide azok kerülnek, akiknél van teendő, de még nincs kitöltött kezelési terv.</div>
+      </div>
+    </div>
+    <div id="pendingPlanList" class="pending-list"></div>
   </div>
 
   <div class="card hide" id="listCard">
@@ -210,6 +229,7 @@
   const summaryCard = document.getElementById('summaryCard');
   const formCard = document.getElementById('formCard');
   const listCard = document.getElementById('listCard');
+  const pendingPlanCard = document.getElementById('pendingPlanCard');
 
   const emailEl = document.getElementById('email');
   const passEl = document.getElementById('password');
@@ -231,11 +251,13 @@
   const saveErr = document.getElementById('saveErr');
   const patientSearch = document.getElementById('patientSearch');
   const patientList = document.getElementById('patientList');
+  const pendingPlanList = document.getElementById('pendingPlanList');
 
   const totalPatients = document.getElementById('totalPatients');
   const masterPatients = document.getElementById('masterPatients');
   const todoPatients = document.getElementById('todoPatients');
   const planPatients = document.getElementById('planPatients');
+  const pendingPlanPatients = document.getElementById('pendingPlanPatients');
 
   let currentUID = null;
   let patientDocs = new Map();
@@ -321,6 +343,7 @@
       summaryCard.classList.add('hide');
       formCard.classList.add('hide');
       listCard.classList.add('hide');
+      pendingPlanCard.classList.add('hide');
     }
   }
 
@@ -358,16 +381,51 @@
     combinedPatients = Array.from(map.values()).filter(p=>p.name).sort((a,b)=>a.name.localeCompare(b.name,'hu-HU'));
   }
 
+  function getPendingPlanPatients(){
+    return combinedPatients.filter(p=>p.hasMaster && (p.todo || '').trim() && !(p.treatmentPlan || '').trim());
+  }
+
   function renderSummary(){
     totalPatients.textContent = combinedPatients.length;
     masterPatients.textContent = combinedPatients.filter(p=>p.hasMaster).length;
     todoPatients.textContent = combinedPatients.filter(p=>(p.todo || '').trim()).length;
     planPatients.textContent = combinedPatients.filter(p=>(p.treatmentPlan || '').trim()).length;
+    pendingPlanPatients.textContent = getPendingPlanPatients().length;
+  }
+
+  function renderPendingPlanList(){
+    const pending = getPendingPlanPatients();
+    pendingPlanList.innerHTML = '';
+
+    if(!currentUID || !pending.length){
+      pendingPlanCard.classList.add('hide');
+      return;
+    }
+
+    pendingPlanCard.classList.remove('hide');
+
+    pending.forEach(p=>{
+      const todo = (p.todo || '').trim();
+      const card = document.createElement('div');
+      card.className = 'pending-card';
+      card.innerHTML = `
+        <div class="pending-main">
+          <div class="pending-name">${esc(p.name || 'Névtelen páciens')}</div>
+          <div class="pending-todo">${esc(todo)}</div>
+        </div>
+        <div class="pending-actions">
+          <button class="btn edit-btn" type="button">Kezelési terv írása</button>
+        </div>
+      `;
+      card.querySelector('.edit-btn').addEventListener('click', ()=>editPatient(p.key));
+      pendingPlanList.appendChild(card);
+    });
   }
 
   function renderPatients(){
     buildCombinedPatients();
     renderSummary();
+    renderPendingPlanList();
 
     const term = normalizeName(patientSearch.value);
     const visible = combinedPatients.filter(p=>{
