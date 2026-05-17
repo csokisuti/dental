@@ -109,6 +109,7 @@
     <div class="nav">
       <a class="btn link" href="income.html">💰 Bevételek</a>
       <a class="btn link" href="meds.html">💊 Gyógyszer kalkulátor</a>
+      <a class="btn link" href="patients.html">👥 Páciensek</a>
       <a class="btn link" href="settings.html">⚙️ Beállítások</a>
       <a class="btn link" href="stats.html">📊 Statisztika</a>
       <button class="btn" id="logoutBtn">🚪 Kijelentkezés</button>
@@ -298,6 +299,7 @@
   let plannerEntries = [];
 
   const patientsIndex = new Map();
+  const patientMasterIndex = new Map();
   const amountIndex = new Map();
 
   const hideLoader = ()=> loader.classList.add('hide');
@@ -318,6 +320,25 @@
   const safeQty = v => Math.max(1, Math.round(+v || 1));
   const createCalcId = () => `${Date.now()}_${Math.random().toString(36).slice(2,10)}`;
   const formatHuf = n => `${safeMoney(n).toLocaleString('hu-HU')} Ft`;
+  function normalizePatientName(text){
+    return String(text || '').trim().replace(/\s+/g,' ').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  }
+  function patientDocKey(text){
+    const key = normalizePatientName(text).replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+    return key || `patient_${Date.now()}`;
+  }
+  async function savePatientNameToMaster(name){
+    if(!currentUID) return;
+    const clean = String(name || '').trim().replace(/\s+/g,' ');
+    if(!clean) return;
+    const normalizedName = normalizePatientName(clean);
+    await setDoc(doc(db,'users',currentUID,'patients',patientDocKey(clean)), {
+      name: clean,
+      normalizedName,
+      lastEntryAt: Date.now(),
+      updatedAt: Date.now()
+    }, { merge:true });
+  }
 
   function setSelectBG(placeName){
     const color = (placeName===settings.w1name) ? settings.w1color : (placeName===settings.w2name) ? settings.w2color : '#ffffff';
@@ -750,7 +771,7 @@
   logoutBtn.onclick = ()=>{ showLoader(); signOut(auth); };
 
   onAuthStateChanged(auth, async (user)=>{
-    if(!user){ currentUID=null; uiAuth(false); return; }
+    if(!user){ currentUID=null; patientsIndex.clear(); patientMasterIndex.clear(); amountIndex.clear(); refreshPatientDatalist(); refreshAmountDatalist(); uiAuth(false); return; }
     currentUID = user.uid;
     const sRef = doc(db,'users',currentUID,'meta','settings');
     const snap = await getDoc(sRef);
@@ -764,7 +785,7 @@
       qs.forEach(d=>{
         const e = d.data();
         const name = (e.patient||'').trim();
-        if(name) patientsIndex.set(name.toLowerCase(), name);
+        if(name) patientsIndex.set(normalizePatientName(name), name);
         const comboKey = makeProcedureComboKey(e.procedure||'');
         if(comboKey && typeof e.amount === 'number' && e.amount>0){
           if(!amountIndex.has(comboKey)) amountIndex.set(comboKey, new Map());
@@ -774,6 +795,17 @@
       });
       refreshPatientDatalist();
       refreshAmountDatalist();
+    });
+
+    const pRef = query(collection(db,'users',currentUID,'patients'), orderBy('normalizedName','asc'), limit(1000));
+    onSnapshot(pRef, (qs)=>{
+      patientMasterIndex.clear();
+      qs.forEach(d=>{
+        const p = d.data();
+        const name = (p.name || '').trim();
+        if(name) patientMasterIndex.set(normalizePatientName(name), name);
+      });
+      refreshPatientDatalist();
     });
   });
 
@@ -837,7 +869,8 @@
   }
   function refreshPatientDatalist(){
     patientListEl.innerHTML = '';
-    const values = Array.from(patientsIndex.values()).sort((a,b)=>a.localeCompare(b,'hu-HU'));
+    const merged = new Map([...patientsIndex, ...patientMasterIndex]);
+    const values = Array.from(merged.values()).sort((a,b)=>a.localeCompare(b,'hu-HU'));
     for(const v of values){ const opt = document.createElement('option'); opt.value = v; patientListEl.appendChild(opt); }
   }
   function refreshAmountDatalist(){
@@ -876,6 +909,7 @@
     try{
       const seq = await nextMonthlySeq(currentUID, mKey);
       await addDoc(collection(db,'users',currentUID,'entries'), { ...payload, monthKey: mKey, seq });
+      await savePatientNameToMaster(payload.patient);
       localStorage.setItem(lastKey(), payload.workplace);
       saveOk.classList.remove('hide');
       setTimeout(()=>saveOk.classList.add('hide'), 2000);
